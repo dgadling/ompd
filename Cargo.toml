@@ -3,8 +3,6 @@ name = "ompd"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -15,3 +13,4 @@ rusttype = "0.9.3"
 chrono = "0.4.24"
 env_logger = "0.10.0"
 log = "0.4.17"
+duration-human = "0.1.10"
