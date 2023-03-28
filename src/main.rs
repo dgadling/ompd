@@ -1,12 +1,11 @@
 use chrono::{Datelike, Local};
+use duration_human::DurationHuman;
+use env_logger::Builder;
 use image::{ImageBuffer, Rgba};
+use log::{debug, info, warn, LevelFilter};
 use rusttype::{Font, Scale};
 use screenshots::Screen;
 use serde::{Deserialize, Serialize};
-// use std::alloc::System;
-use duration_human::DurationHuman;
-use env_logger::Builder;
-use log::{debug, info, LevelFilter, warn};
 use std::fs;
 use std::fs::{create_dir_all, File};
 use std::thread;
@@ -20,7 +19,10 @@ struct Config {
 }
 
 fn main() {
-    Builder::new().filter_level(LevelFilter::max()).init();
+    Builder::new()
+        .filter_level(LevelFilter::max())
+        .filter_module("wmi", LevelFilter::Error)
+        .init();
     let config_file = File::open("config.json").expect("Failed to open config.json");
     let config: Config = serde_json::from_reader(config_file).expect("Failed to read config file");
     debug!("Read config of: {:?}", config);
@@ -42,10 +44,19 @@ fn main() {
     let sleep_interval = Duration::from_secs(config.interval);
 
     loop {
+        if ! have_a_screen() {
+            info!("Looks like no graphics, skip for now");
+            thread::sleep(sleep_interval);
+            continue;
+        }
+
         let now = Local::now();
-        let elapsed_since_last_shot = Duration::new((now.timestamp() - last_time.timestamp()) as u64, 0);
+        let elapsed_since_last_shot =
+            Duration::new((now.timestamp() - last_time.timestamp()) as u64, 0);
         if elapsed_since_last_shot.as_secs() > config.max_sleep_secs {
-            create_filler_frame(elapsed_since_last_shot, 860, 360).save(output_dir.join("test-frame.png")).expect("Couldn't create filler frame!");
+            create_filler_frame(elapsed_since_last_shot, 860, 360)
+                .save(output_dir.join("test-frame.png"))
+                .expect("Couldn't create filler frame!");
             // TODO: Handle the day rolling over, or needing a new directory to work in
             panic!("Uhhh, day rolled over, I should do something smarter here!");
         }
@@ -56,10 +67,11 @@ fn main() {
         let capture_result = screen.capture();
         match capture_result {
             Ok(capture) => {
+                debug!("Writing out a file to {:?}", filepath);
                 fs::write(&filepath, capture.buffer()).expect("Failed to write PNG data to file");
                 curr_frame += 1;
                 last_time = now;
-            },
+            }
             Err(error) => {
                 warn!("Trouble capturing screen: {:?}", error);
             }
@@ -117,4 +129,49 @@ fn create_filler_frame(
 
     // return the resulting image
     img
+}
+
+#[cfg(target_os = "macos")]
+fn have_a_screen() -> bool {
+    /*
+    NOTE: On OS X we can use
+        /usr/bin/pmset -g systemstate | grep -q Graphics
+    to see if the display is on or not.
+    if that exits dirty, there's no graphics. We should just sleep & continue
+    */
+    return true;
+}
+
+#[cfg(target_os = "windows")]
+use wmi::*;
+use wmi::COMLibrary;
+
+#[cfg(target_os = "windows")]
+#[derive(Deserialize, Debug)]
+#[serde(rename = "Win32_Process")]
+#[serde(rename_all = "PascalCase")]
+struct Process {
+    process_id: u32,
+    name: String,
+}
+
+#[cfg(target_os = "windows")]
+fn have_a_screen() -> bool {
+    let wmi_con = WMIConnection::new(COMLibrary::new().unwrap()).unwrap();
+
+    let results: Result<Vec<Process>, WMIError> = wmi_con.query();
+    match results {
+        Ok(procs) => {
+            for proc in procs {
+                if proc.name == "LogonUI.exe" {
+                    debug!("Found LogonUI (pid = {:?}) started", proc.process_id);
+                    return false;
+                }
+            }
+        }
+        Err(error) => {
+            warn!("Got an error fetching WMI info: {:#?}", error)
+        }
+    }
+    return true;
 }
