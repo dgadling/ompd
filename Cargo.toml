@@ -15,6 +15,7 @@ env_logger = "0.10.0"
 log = "0.4.17"
 duration-human = "0.1.10"
 ctrlc = "3.2.5"
+anyhow = "1.0.70"
 
 [target.'cfg(windows)'.dependencies]
 wmi = "0.12.1"

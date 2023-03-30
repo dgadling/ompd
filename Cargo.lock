@@ -1046,6 +1046,7 @@ dependencies = [
 name = "ompd"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "chrono",
  "ctrlc",
  "duration-human",

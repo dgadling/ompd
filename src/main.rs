@@ -1,9 +1,10 @@
+use anyhow::anyhow;
 use chrono::{Datelike, Local};
 use ctrlc;
 use duration_human::DurationHuman;
 use env_logger::Builder;
 use image::{ImageBuffer, Rgba};
-use log::{debug, info, warn, LevelFilter};
+use log::{debug, info, LevelFilter};
 use rusttype::{Font, Scale};
 use screenshots::Screen;
 use serde::{Deserialize, Serialize};
@@ -50,10 +51,14 @@ fn main() {
     let sleep_interval = Duration::from_secs(config.interval);
 
     loop {
-        if !have_a_screen(screen) {
-            info!("Looks like no graphics, skip this frame");
-            thread::sleep(sleep_interval);
-            continue;
+        let capture_result = get_screenshot(screen);
+        match capture_result {
+            Err(e) => {
+                info!("Couldn't get a good screenshot ({:?}), skip this frame", e);
+                thread::sleep(sleep_interval);
+                continue;
+            }
+            _ => (),
         }
 
         let now = Local::now();
@@ -70,18 +75,11 @@ fn main() {
         let filename = format!("{:05}.png", curr_frame);
         let filepath = output_dir.join(filename);
 
-        let capture_result = screen.capture();
-        match capture_result {
-            Ok(capture) => {
-                debug!("Writing out a file to {:?}", filepath);
-                fs::write(&filepath, capture.buffer()).expect("Failed to write PNG data to file");
-                curr_frame += 1;
-                last_time = now;
-            }
-            Err(error) => {
-                warn!("Trouble capturing screen: {:?}", error);
-            }
-        }
+        let capture = capture_result.unwrap();
+        debug!("Writing out a file to {:?}", filepath);
+        fs::write(&filepath, capture.buffer()).expect("Failed to write PNG data to file");
+        curr_frame += 1;
+        last_time = now;
 
         thread::sleep(sleep_interval);
     }
@@ -137,19 +135,21 @@ fn create_filler_frame(
     img
 }
 
-#[cfg(target_os = "macos")]
-fn have_a_screen(_screen: Screen) -> bool {
+#[cfg(not(target_os = "windows"))]
+fn get_screenshot(screen: Screen) -> Result<screenshots::Image, anyhow::Error> {
     /*
     NOTE: On OS X we can use
         /usr/bin/pmset -g systemstate | grep -q Graphics
     to see if the display is on or not.
     if that exits dirty, there's no graphics. We should just sleep & continue
     */
-    return true;
+    screen.capture()
 }
+
 
 #[cfg(target_os = "windows")]
 use wmi::connection::WMIConnection;
+use wmi::query::FilterValue;
 use wmi::COMLibrary;
 
 #[cfg(target_os = "windows")]
@@ -158,37 +158,38 @@ use wmi::COMLibrary;
 #[serde(rename_all = "PascalCase")]
 struct Process {
     process_id: u32,
-    name: String,
 }
 
 #[cfg(target_os = "windows")]
-fn have_a_screen(screen: Screen) -> bool {
+fn get_screenshot(screen: Screen) -> Result<screenshots::Image, anyhow::Error> {
     /*
-    First, check to see if can capture a 1x1 portion of the screen. The main reason we wouldn't be
-    able to is that the screen saver is running. Even running as administrator you can't capture the
-    screen saver.
+    First, just try to capture the screen. The main reason we wouldn't be able to is that the screen
+    saver is running. Even running as administrator you can't capture the screen saver.
     */
-    let capture_result = screen.capture_area(0, 0, 1, 1);
-    match capture_result {
-        Err(error) => {
-            debug!("Error capturing screen: {:?}", error);
-            return false;
-        }
-        _ => (),
-    }
+
+    use std::collections::HashMap;
+    let capture = screen.capture()?;
 
     /*
-
+    OK, that worked. Now let's make sure we didn't capture anything strange because the lock screen
+    is active. Once the lock screen activates and the display goes into standby, we get a simple
+    solid color. So just to be safe, if LogonUI.exe is running, return an Error.
     */
     let wmi_con = WMIConnection::new(COMLibrary::new().unwrap()).unwrap();
-    let procs: Vec<Process> = wmi_con.query().unwrap();
-    for proc in procs {
-        if proc.name == "LogonUI.exe" {
-            debug!("Found LogonUI (pid = {:?}) started", proc.process_id);
-            return false;
-        }
+    let logons: Vec<Process> = wmi_con
+        .filtered_query(&HashMap::from([(
+            "Name".to_owned(),
+            FilterValue::Str("LogonUI.exe"),
+        )]))
+        .unwrap();
+    if logons.len() > 0 {
+        return Err(anyhow!(
+            "Lock screen is active ({:?}), do not want.",
+            logons.get(0).unwrap().process_id
+        ));
     }
-    return true;
+
+    Ok(capture)
 }
 
 #[cfg(target_os = "windows")]
