@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use chrono::{Datelike, Local};
 use ctrlc;
 use duration_human::DurationHuman;
@@ -12,6 +11,16 @@ use std::fs;
 use std::fs::{create_dir_all, File};
 use std::thread;
 use std::time::Duration;
+
+#[cfg(target_os = "windows")]
+mod windows;
+#[cfg(target_os = "windows")]
+use windows::{get_screenshot, ctrl_c_exit};
+
+#[cfg(not(target_os = "windows"))]
+mod not_windows;
+#[cfg(not(target_os = "windows"))]
+use not_windows::{get_screenshot, ctrl_c_exit};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
@@ -133,71 +142,4 @@ fn create_filler_frame(
 
     // return the resulting image
     img
-}
-
-#[cfg(not(target_os = "windows"))]
-fn get_screenshot(screen: Screen) -> Result<screenshots::Image, anyhow::Error> {
-    /*
-    NOTE: On OS X we can use
-        /usr/bin/pmset -g systemstate | grep -q Graphics
-    to see if the display is on or not.
-    if that exits dirty, there's no graphics. We should just sleep & continue
-    */
-    screen.capture()
-}
-
-
-#[cfg(target_os = "windows")]
-use wmi::connection::WMIConnection;
-use wmi::query::FilterValue;
-use wmi::COMLibrary;
-
-#[cfg(target_os = "windows")]
-#[derive(Deserialize, Debug)]
-#[serde(rename = "Win32_Process")]
-#[serde(rename_all = "PascalCase")]
-struct Process {
-    process_id: u32,
-}
-
-#[cfg(target_os = "windows")]
-fn get_screenshot(screen: Screen) -> Result<screenshots::Image, anyhow::Error> {
-    /*
-    First, just try to capture the screen. The main reason we wouldn't be able to is that the screen
-    saver is running. Even running as administrator you can't capture the screen saver.
-    */
-
-    use std::collections::HashMap;
-    let capture = screen.capture()?;
-
-    /*
-    OK, that worked. Now let's make sure we didn't capture anything strange because the lock screen
-    is active. Once the lock screen activates and the display goes into standby, we get a simple
-    solid color. So just to be safe, if LogonUI.exe is running, return an Error.
-    */
-    let wmi_con = WMIConnection::new(COMLibrary::new().unwrap()).unwrap();
-    let logons: Vec<Process> = wmi_con
-        .filtered_query(&HashMap::from([(
-            "Name".to_owned(),
-            FilterValue::Str("LogonUI.exe"),
-        )]))
-        .unwrap();
-    if logons.len() > 0 {
-        return Err(anyhow!(
-            "Lock screen is active ({:?}), do not want.",
-            logons.get(0).unwrap().process_id
-        ));
-    }
-
-    Ok(capture)
-}
-
-#[cfg(target_os = "windows")]
-fn ctrl_c_exit() {
-    std::process::exit(0x13a);
-}
-
-#[cfg(not(target_os = "windows"))]
-fn ctrl_c_exit() {
-    std::process::exit(130);
 }
