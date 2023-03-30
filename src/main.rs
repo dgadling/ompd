@@ -1,4 +1,5 @@
 use chrono::{Datelike, Local};
+use ctrlc;
 use duration_human::DurationHuman;
 use env_logger::Builder;
 use image::{ImageBuffer, Rgba};
@@ -19,6 +20,11 @@ struct Config {
 }
 
 fn main() {
+    ctrlc::set_handler(move || {
+        ctrl_c_exit();
+    })
+    .expect("Couldn't set a clean exit handler!");
+
     Builder::new()
         .filter_level(LevelFilter::max())
         .filter_module("wmi", LevelFilter::Error)
@@ -44,8 +50,8 @@ fn main() {
     let sleep_interval = Duration::from_secs(config.interval);
 
     loop {
-        if ! have_a_screen() {
-            info!("Looks like no graphics, skip for now");
+        if !have_a_screen() {
+            info!("Looks like no graphics, skip this frame");
             thread::sleep(sleep_interval);
             continue;
         }
@@ -143,7 +149,8 @@ fn have_a_screen() -> bool {
 }
 
 #[cfg(target_os = "windows")]
-use wmi::*;
+use wmi::connection::WMIConnection;
+use wmi::utils::WMIError;
 use wmi::COMLibrary;
 
 #[cfg(target_os = "windows")]
@@ -174,4 +181,14 @@ fn have_a_screen() -> bool {
         }
     }
     return true;
+}
+
+#[cfg(target_os = "windows")]
+fn ctrl_c_exit() {
+    std::process::exit(0x13a);
+}
+
+#[cfg(not(target_os = "windows"))]
+fn ctrl_c_exit() {
+    std::process::exit(130);
 }
