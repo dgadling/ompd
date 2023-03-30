@@ -50,7 +50,7 @@ fn main() {
     let sleep_interval = Duration::from_secs(config.interval);
 
     loop {
-        if !have_a_screen() {
+        if !have_a_screen(screen) {
             info!("Looks like no graphics, skip this frame");
             thread::sleep(sleep_interval);
             continue;
@@ -138,7 +138,7 @@ fn create_filler_frame(
 }
 
 #[cfg(target_os = "macos")]
-fn have_a_screen() -> bool {
+fn have_a_screen(_screen: Screen) -> bool {
     /*
     NOTE: On OS X we can use
         /usr/bin/pmset -g systemstate | grep -q Graphics
@@ -150,7 +150,6 @@ fn have_a_screen() -> bool {
 
 #[cfg(target_os = "windows")]
 use wmi::connection::WMIConnection;
-use wmi::utils::WMIError;
 use wmi::COMLibrary;
 
 #[cfg(target_os = "windows")]
@@ -163,21 +162,30 @@ struct Process {
 }
 
 #[cfg(target_os = "windows")]
-fn have_a_screen() -> bool {
-    let wmi_con = WMIConnection::new(COMLibrary::new().unwrap()).unwrap();
-
-    let results: Result<Vec<Process>, WMIError> = wmi_con.query();
-    match results {
-        Ok(procs) => {
-            for proc in procs {
-                if proc.name == "LogonUI.exe" {
-                    debug!("Found LogonUI (pid = {:?}) started", proc.process_id);
-                    return false;
-                }
-            }
-        }
+fn have_a_screen(screen: Screen) -> bool {
+    /*
+    First, check to see if can capture a 1x1 portion of the screen. The main reason we wouldn't be
+    able to is that the screen saver is running. Even running as administrator you can't capture the
+    screen saver.
+    */
+    let capture_result = screen.capture_area(0, 0, 1, 1);
+    match capture_result {
         Err(error) => {
-            warn!("Got an error fetching WMI info: {:#?}", error)
+            debug!("Error capturing screen: {:?}", error);
+            return false;
+        }
+        _ => (),
+    }
+
+    /*
+
+    */
+    let wmi_con = WMIConnection::new(COMLibrary::new().unwrap()).unwrap();
+    let procs: Vec<Process> = wmi_con.query().unwrap();
+    for proc in procs {
+        if proc.name == "LogonUI.exe" {
+            debug!("Found LogonUI (pid = {:?}) started", proc.process_id);
+            return false;
         }
     }
     return true;
