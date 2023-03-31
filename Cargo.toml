@@ -13,9 +13,9 @@ rusttype = "0.9.3"
 chrono = "0.4.24"
 env_logger = "0.10.0"
 log = "0.4.17"
-duration-human = "0.1.10"
 ctrlc = "3.2.5"
 anyhow = "1.0.70"
+symlink = "0.1.0"
 
 [target.'cfg(windows)'.dependencies]
 wmi = "0.12.1"

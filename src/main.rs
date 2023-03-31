@@ -1,6 +1,6 @@
+use anyhow::Error;
 use chrono::{Datelike, Local};
 use ctrlc;
-use duration_human::DurationHuman;
 use env_logger::Builder;
 use image::{ImageBuffer, Rgba};
 use log::{debug, info, LevelFilter};
@@ -9,18 +9,20 @@ use screenshots::Screen;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::{create_dir_all, File};
+use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
+use symlink::symlink_file;
 
 #[cfg(target_os = "windows")]
 mod windows;
 #[cfg(target_os = "windows")]
-use windows::{get_screenshot, ctrl_c_exit};
+use windows::{ctrl_c_exit, get_screenshot};
 
 #[cfg(not(target_os = "windows"))]
 mod not_windows;
 #[cfg(not(target_os = "windows"))]
-use not_windows::{get_screenshot, ctrl_c_exit};
+use not_windows::{ctrl_c_exit, get_screenshot};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
@@ -28,6 +30,8 @@ struct Config {
     max_sleep_secs: u64,
     output_dir: String,
 }
+
+type FrameCounter = u32;
 
 fn main() {
     ctrlc::set_handler(move || {
@@ -39,9 +43,11 @@ fn main() {
         .filter_level(LevelFilter::max())
         .filter_module("wmi", LevelFilter::Error)
         .init();
+
     let config_file = File::open("config.json").expect("Failed to open config.json");
     let config: Config = serde_json::from_reader(config_file).expect("Failed to read config file");
     debug!("Read config of: {:?}", config);
+    let sleep_interval = Duration::from_secs(config.interval);
 
     let starting_time = Local::now();
     let mut last_time = starting_time.clone();
@@ -57,7 +63,6 @@ fn main() {
     create_dir_all(&output_dir).expect("Failed to create output directory");
     let mut curr_frame = get_curr_frame(&output_dir).expect("Failed to count files");
     let screen = Screen::all().unwrap().first().unwrap().to_owned();
-    let sleep_interval = Duration::from_secs(config.interval);
 
     loop {
         let capture_result = get_screenshot(screen);
@@ -73,12 +78,15 @@ fn main() {
         let now = Local::now();
         let elapsed_since_last_shot =
             Duration::new((now.timestamp() - last_time.timestamp()) as u64, 0);
+
         if elapsed_since_last_shot.as_secs() > config.max_sleep_secs {
-            create_filler_frame(elapsed_since_last_shot, 860, 360)
-                .save(output_dir.join("test-frame.png"))
-                .expect("Couldn't create filler frame!");
-            // TODO: Handle the day rolling over, or needing a new directory to work in
-            panic!("Uhhh, day rolled over, I should do something smarter here!");
+            curr_frame = deal_with_blackout(
+                &elapsed_since_last_shot,
+                &output_dir,
+                curr_frame,
+                &sleep_interval,
+            )
+            .unwrap();
         }
 
         let filename = format!("{:05}.png", curr_frame);
@@ -94,14 +102,16 @@ fn main() {
     }
 }
 
-fn get_curr_frame(dir: &std::path::Path) -> std::io::Result<usize> {
+fn get_curr_frame(dir: &std::path::Path) -> std::io::Result<FrameCounter> {
     debug!("Examining {:?}", dir);
-    let mut count = 0;
+    let mut count: FrameCounter = 0;
     for entry in std::fs::read_dir(dir)? {
         let entry = entry?;
+        /*
         if !(entry.file_type()?.is_file()) {
             continue;
         }
+        */
         if !(entry.path().extension().unwrap() == "png") {
             continue;
         }
@@ -112,7 +122,7 @@ fn get_curr_frame(dir: &std::path::Path) -> std::io::Result<usize> {
 }
 
 fn create_filler_frame(
-    duration: Duration,
+    duration: &Duration,
     width: u32,
     height: u32,
 ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
@@ -120,7 +130,7 @@ fn create_filler_frame(
     let white = Rgba([255, 255, 255, 255]);
     let mut img = ImageBuffer::from_pixel(width, height, black);
 
-    let duration_str = format!("{:#} go by", DurationHuman::try_from(duration).unwrap());
+    let duration_str = format!("{:#} go by", human_duration(&duration));
     let font_data = include_bytes!("Ubuntu-Regular.ttf");
     let font = Font::try_from_bytes(font_data as &[u8]).unwrap();
     let font_size = 80.0;
@@ -142,4 +152,59 @@ fn create_filler_frame(
 
     // return the resulting image
     img
+}
+
+fn deal_with_blackout(
+    elapsed: &Duration,
+    output_dir: &PathBuf,
+    curr_frame: FrameCounter,
+    sleep_interval: &Duration,
+) -> Result<FrameCounter, Error> {
+    info!(
+        "Looks like we've been away for a while ({:?} seconds).",
+        elapsed.as_secs()
+    );
+
+    let filler_frame_path = output_dir.join(format!("{:05}.png", curr_frame));
+
+    info!("Creating filler frame @ {:?}", filler_frame_path);
+    create_filler_frame(elapsed, 860, 360)
+        .save(&filler_frame_path)
+        .expect("Couldn't create filler frame!");
+
+    let missed_frames = (elapsed.as_secs() / sleep_interval.as_secs()) as u32;
+    debug!("Going to create {:?} frames", missed_frames);
+    for n in 1..missed_frames {
+        symlink_file(
+            &filler_frame_path,
+            output_dir.join(format!("{:05}.png", curr_frame + n)),
+        )?;
+    }
+
+    debug!("New curr_frame = {:?}", curr_frame + missed_frames);
+    Ok(curr_frame + missed_frames)
+}
+
+fn human_duration(duration: &Duration) -> String {
+    let seconds = duration.as_secs();
+
+    let cleaned;
+    let unit ;
+
+    if seconds >= 3600 {
+        cleaned = seconds / 3600;
+        unit = "hr";
+    } else if seconds > 60 {
+        cleaned = seconds / 60;
+        unit = "min";
+    } else {
+        cleaned = seconds;
+        unit = "sec";
+    }
+
+    if cleaned > 1 {
+        format!("~ {} {}s", cleaned, unit)
+    } else {
+        format!("~ {} {}", cleaned, unit)
+    }
 }
