@@ -11,7 +11,6 @@ use std::fs;
 use std::fs::{create_dir_all, File};
 use std::path::PathBuf;
 use std::thread;
-use std::time::Duration;
 use symlink::symlink_file;
 
 #[cfg(target_os = "windows")]
@@ -47,7 +46,7 @@ fn main() {
     let config_file = File::open("config.json").expect("Failed to open config.json");
     let config: Config = serde_json::from_reader(config_file).expect("Failed to read config file");
     debug!("Read config of: {:?}", config);
-    let sleep_interval = Duration::from_secs(config.interval);
+    let sleep_interval = std::time::Duration::from_secs(config.interval);
 
     let starting_time = Local::now();
     let mut last_time = starting_time.clone();
@@ -76,12 +75,16 @@ fn main() {
         }
 
         let now = Local::now();
-        let elapsed_since_last_shot =
-            Duration::new((now.timestamp() - last_time.timestamp()) as u64, 0);
 
-        if elapsed_since_last_shot.as_secs() > config.max_sleep_secs {
+        // NOTE: Timezone changes are handled correctly, so this can only go backwards if the timezone doesn't
+        // change but the system clock goes backwards somehow.
+        let elapsed_since_last_shot = (now - last_time).num_seconds() as i64;
+
+        if elapsed_since_last_shot > config.max_sleep_secs as i64 {
+            // At this point we know we went *forward* in time since max_sleep_secs can only be
+            // positive, so it's safe to cast the i64 to a u64.
             curr_frame = deal_with_blackout(
-                &elapsed_since_last_shot,
+                elapsed_since_last_shot as u64,
                 &output_dir,
                 curr_frame,
                 &sleep_interval,
@@ -122,7 +125,7 @@ fn get_curr_frame(dir: &std::path::Path) -> std::io::Result<FrameCounter> {
 }
 
 fn create_filler_frame(
-    duration: &Duration,
+    duration_secs: u64,
     width: u32,
     height: u32,
 ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
@@ -130,7 +133,7 @@ fn create_filler_frame(
     let white = Rgba([255, 255, 255, 255]);
     let mut img = ImageBuffer::from_pixel(width, height, black);
 
-    let duration_str = format!("{:#} go by", human_duration(&duration));
+    let duration_str = format!("{:#} go by", human_duration(duration_secs));
     let font_data = include_bytes!("Ubuntu-Regular.ttf");
     let font = Font::try_from_bytes(font_data as &[u8]).unwrap();
     let font_size = 80.0;
@@ -155,24 +158,24 @@ fn create_filler_frame(
 }
 
 fn deal_with_blackout(
-    elapsed: &Duration,
+    elapsed_secs: u64,
     output_dir: &PathBuf,
     curr_frame: FrameCounter,
-    sleep_interval: &Duration,
+    sleep_interval: &std::time::Duration,
 ) -> Result<FrameCounter, Error> {
     info!(
         "Looks like we've been away for a while ({:?} seconds).",
-        elapsed.as_secs()
+        elapsed_secs
     );
 
     let filler_frame_path = output_dir.join(format!("{:05}.png", curr_frame));
 
     info!("Creating filler frame @ {:?}", filler_frame_path);
-    create_filler_frame(elapsed, 860, 360)
+    create_filler_frame(elapsed_secs, 860, 360)
         .save(&filler_frame_path)
         .expect("Couldn't create filler frame!");
 
-    let missed_frames = (elapsed.as_secs() / sleep_interval.as_secs()) as u32;
+    let missed_frames = (elapsed_secs / sleep_interval.as_secs()) as u32;
     debug!("Going to create {:?} frames", missed_frames);
     for n in 1..missed_frames {
         symlink_file(
@@ -185,20 +188,18 @@ fn deal_with_blackout(
     Ok(curr_frame + missed_frames)
 }
 
-fn human_duration(duration: &Duration) -> String {
-    let seconds = duration.as_secs();
-
+fn human_duration(duration_secs: u64) -> String {
     let cleaned;
-    let unit ;
+    let unit;
 
-    if seconds >= 3600 {
-        cleaned = seconds / 3600;
+    if duration_secs >= 3600 {
+        cleaned = duration_secs / 3600;
         unit = "hr";
-    } else if seconds > 60 {
-        cleaned = seconds / 60;
+    } else if duration_secs > 60 {
+        cleaned = duration_secs / 60;
         unit = "min";
     } else {
-        cleaned = seconds;
+        cleaned = duration_secs;
         unit = "sec";
     }
 
