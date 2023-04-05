@@ -33,7 +33,7 @@ pub fn get_screenshot(screen: Screen) -> Result<Image, Error> {
             FilterValue::Str("LogonUI.exe"),
         )]))
         .unwrap();
-    if logons.len() > 0 {
+    if !logons.is_empty() {
         return Err(anyhow!(
             "Lock screen is active ({:?}), do not want.",
             logons.get(0).unwrap().process_id

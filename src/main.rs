@@ -1,6 +1,5 @@
 use anyhow::Error;
 use chrono::{Datelike, Local};
-use ctrlc;
 use env_logger::Builder;
 use image::{ImageBuffer, Rgba};
 use log::{debug, info, LevelFilter};
@@ -9,7 +8,7 @@ use screenshots::Screen;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::{create_dir_all, File};
-use std::path::PathBuf;
+use std::path::Path;
 use std::thread;
 use symlink::symlink_file;
 
@@ -49,7 +48,7 @@ fn main() {
     let sleep_interval = std::time::Duration::from_secs(config.interval);
 
     let starting_time = Local::now();
-    let mut last_time = starting_time.clone();
+    let mut last_time = starting_time;
     let year = starting_time.year().to_string();
     let month = format!("{:02}", starting_time.month());
     let day = format!("{:02}", starting_time.day());
@@ -65,20 +64,17 @@ fn main() {
 
     loop {
         let capture_result = get_screenshot(screen);
-        match capture_result {
-            Err(e) => {
-                info!("Couldn't get a good screenshot ({:?}), skip this frame", e);
-                thread::sleep(sleep_interval);
-                continue;
-            }
-            _ => (),
+        if let Err(e) = capture_result {
+            info!("Couldn't get a good screenshot ({:?}), skip this frame", e);
+            thread::sleep(sleep_interval);
+            continue;
         }
 
         let now = Local::now();
 
         // NOTE: Timezone changes are handled correctly, so this can only go backwards if the timezone doesn't
         // change but the system clock goes backwards somehow.
-        let elapsed_since_last_shot = (now - last_time).num_seconds() as i64;
+        let elapsed_since_last_shot = (now - last_time).num_seconds();
 
         if elapsed_since_last_shot > config.max_sleep_secs as i64 {
             // At this point we know we went *forward* in time since max_sleep_secs can only be
@@ -115,7 +111,7 @@ fn get_curr_frame(dir: &std::path::Path) -> std::io::Result<FrameCounter> {
             continue;
         }
         */
-        if !(entry.path().extension().unwrap() == "png") {
+        if entry.path().extension().unwrap() != "png" {
             continue;
         }
         count += 1;
@@ -159,7 +155,7 @@ fn create_filler_frame(
 
 fn deal_with_blackout(
     elapsed_secs: u64,
-    output_dir: &PathBuf,
+    output_dir: &Path,
     curr_frame: FrameCounter,
     sleep_interval: &std::time::Duration,
 ) -> Result<FrameCounter, Error> {
