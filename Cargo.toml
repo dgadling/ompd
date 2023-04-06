@@ -19,3 +19,6 @@ symlink = "0.1.0"
 
 [target.'cfg(windows)'.dependencies]
 wmi = "0.12.1"
+
+[profile.release]
+lto = "thin"
