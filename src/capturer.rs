@@ -80,6 +80,8 @@ impl Capturer {
         let filename = format!("{:05}.png", self.curr_frame);
         let filepath = dir.join(filename);
 
+        assert!(!filepath.exists(), "I'm trying to overwrite myself!");
+
         let capture = capture_result;
         debug!("Writing out a file to {filepath:?}");
         fs::write(&filepath, capture.buffer()).expect("Failed to write PNG data to file");
