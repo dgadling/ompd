@@ -81,7 +81,7 @@ impl Capturer {
         let filepath = dir.join(filename);
 
         let capture = capture_result;
-        debug!("Writing out a file to {:?}", filepath);
+        debug!("Writing out a file to {filepath:?}");
         fs::write(&filepath, capture.buffer()).expect("Failed to write PNG data to file");
         self.curr_frame += 1;
     }
@@ -91,22 +91,19 @@ impl Capturer {
         elapsed_secs: u64,
         dir_manager: &mut DirManager,
     ) -> Result<(), Error> {
-        info!(
-            "Looks like we've been away for a while ({:?} seconds).",
-            elapsed_secs
-        );
+        info!("Looks like we've been away for a while ({elapsed_secs:?} seconds).");
 
         let filler_frame_path = dir_manager
             .current_dir()
             .join(format!("{:05}.png", self.curr_frame));
 
-        info!("Creating filler frame @ {:?}", filler_frame_path);
+        info!("Creating filler frame @ {filler_frame_path:?}");
         Self::create_filler_frame(elapsed_secs, 860, 360)
             .save(&filler_frame_path)
             .expect("Couldn't create filler frame!");
 
         let missed_frames = (elapsed_secs / self.sleep_interval.as_secs()) as u32;
-        debug!("Going to create {:?} frames", missed_frames);
+        debug!("Going to create {missed_frames:?} frames");
         for n in 1..missed_frames {
             symlink_file(
                 &filler_frame_path,
@@ -124,21 +121,16 @@ impl Capturer {
     fn get_curr_frame(&self, dir_manager: &mut DirManager) -> std::io::Result<FrameCounter> {
         let dir = dir_manager.current_dir();
 
-        debug!("Examining {:?}", dir);
+        debug!("Examining {dir:?}");
         let mut count: FrameCounter = 0;
         for entry in std::fs::read_dir(dir)? {
             let entry = entry?;
-            /*
-            if !(entry.file_type()?.is_file()) {
-                continue;
-            }
-            */
             if entry.path().extension().unwrap() != "png" {
                 continue;
             }
             count += 1;
         }
-        debug!("Found {:?} existing PNGs", count);
+        debug!("Found {count:?} existing PNGs");
         Ok(count)
     }
 
@@ -191,9 +183,9 @@ impl Capturer {
         }
 
         if cleaned > 1 {
-            format!("~ {} {}s", cleaned, unit)
+            format!("~ {cleaned} {unit}s")
         } else {
-            format!("~ {} {}", cleaned, unit)
+            format!("~ {cleaned} {unit}")
         }
     }
 }

@@ -41,7 +41,7 @@ fn main() {
 
     let config_file = File::open("config.json").expect("Failed to open config.json");
     let config: Config = serde_json::from_reader(config_file).expect("Failed to read config file");
-    debug!("Read config of: {:?}", config);
+    debug!("Read config of: {config:?}");
     let sleep_interval = std::time::Duration::from_secs(config.interval);
 
     assert!(
@@ -57,7 +57,7 @@ fn main() {
 
     let made_output_d = d.make_output_dir();
     if let Err(e) = made_output_d {
-        error!("Couldn't make an output directory: {:?}", e);
+        error!("Couldn't make an output directory: {e:?}");
         panic!("Couldn't make an output directory!");
     }
 
@@ -76,12 +76,12 @@ fn main() {
         // NOTE: Timezone changes are handled correctly in subtraction, so this can only go
         // backwards if the timezone doesn't change but the system clock goes backwards.
         if (now - last_time).num_seconds() > config.max_sleep_secs {
+
             // At this point we know we went *forward* in time since max_sleep_secs can only be
             // positive.
-
             let change_result = c.deal_with_change(&mut d, &last_time, &now);
             if let Err(e) = change_result {
-                error!("Some issue dealing with a decent time gap: {:?}", e);
+                error!("Some issue dealing with a decent time gap: {e:?}");
                 info!("Going to sleep and try again");
                 thread::sleep(sleep_interval);
                 continue;
