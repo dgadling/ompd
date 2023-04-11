@@ -1,8 +1,10 @@
 use chrono::Local;
 use env_logger::Builder;
-use log::{debug, error, info, LevelFilter};
+use home::home_dir;
+use log::{debug, error, info, warn, LevelFilter};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
+use std::path::Path;
 use std::thread;
 
 #[cfg(target_os = "windows")]
@@ -28,6 +30,44 @@ struct Config {
     output_dir: String,
 }
 
+fn get_config() -> Config {
+    let config_path = Path::new("config.json");
+    let mut write_config = true;
+
+    if config_path.exists() {
+        if config_path.is_file() {
+            let config_file = File::open(config_path).expect("Failed to open config.json");
+            let config: Config =
+                serde_json::from_reader(config_file).expect("Failed to read config file");
+            debug!("Read config of: {config:?}");
+            return config;
+        } else {
+            warn!("{config_path:?} isn't a file. Going to use default config and NOT save it.");
+            write_config = false;
+        }
+    }
+
+    debug!("Making new base config");
+    let home = home_dir().expect("Couldn't figure out our home directory?!");
+    let new_config = Config {
+        interval: 20,
+        max_sleep_secs: 180,
+        output_dir: home.join("Pictures").join("ompd").into_os_string().into_string().unwrap(),
+    };
+
+    if write_config {
+        let wrote_config = std::fs::write(
+            config_path,
+            serde_json::to_string_pretty(&new_config).unwrap(),
+        );
+        if let Err(e) = wrote_config {
+            error!("Couldn't write config file! Will have to try again next time: {e:?}");
+        }
+    }
+
+    new_config
+}
+
 fn main() {
     ctrlc::set_handler(move || {
         ctrl_c_exit();
@@ -39,9 +79,7 @@ fn main() {
         .filter_module("wmi", LevelFilter::Error)
         .init();
 
-    let config_file = File::open("config.json").expect("Failed to open config.json");
-    let config: Config = serde_json::from_reader(config_file).expect("Failed to read config file");
-    debug!("Read config of: {config:?}");
+    let config = get_config();
     let sleep_interval = std::time::Duration::from_secs(config.interval);
 
     assert!(
