@@ -66,6 +66,9 @@ impl Capturer {
     fn deal_with_new_day(&mut self, dir_manager: &mut DirManager) -> Result<(), Error> {
         info!("Brand new day! Let's goooooo");
 
+        // TODO: Fire up a resizer, gap filler, and movie maker for the previous day. Do this before
+        // getting ready for today to make sure we have the right path to make movies in.
+
         dir_manager.make_output_dir()?;
         self.curr_frame = 0;
 
