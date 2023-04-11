@@ -1,3 +1,9 @@
+#[cfg(target_os = "windows")]
+mod windows;
+
+#[cfg(not(target_os = "windows"))]
+mod not_windows;
+
 use anyhow::Error;
 use chrono::{DateTime, Datelike, Local};
 use image::{ImageBuffer, Rgba};
@@ -9,12 +15,10 @@ use std::path::Path;
 use symlink::symlink_file;
 
 #[cfg(target_os = "windows")]
-use crate::windows::get_screenshot;
+use windows::get_screenshot;
 
 #[cfg(not(target_os = "windows"))]
-mod not_windows;
-#[cfg(not(target_os = "windows"))]
-use not_windows::{ctrl_c_exit, get_screenshot};
+use not_windows::get_screenshot;
 
 use crate::dir_manager::DirManager;
 

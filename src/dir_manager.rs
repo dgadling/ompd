@@ -17,7 +17,7 @@ impl DirManager {
         }
     }
 
-    pub fn make_output_dir(&mut self) -> std::io::Result<&Path>{
+    pub fn make_output_dir(&mut self) -> std::io::Result<&Path> {
         self.current_dir = Self::get_current_dir_in(&self.root_dir);
 
         create_dir_all(&self.current_dir).expect("Couldn't create output directory!");
