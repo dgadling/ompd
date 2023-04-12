@@ -11,6 +11,7 @@ pub struct Config {
     pub shot_output_dir: String,
     pub vid_output_dir: String,
     pub ffmpeg: String,
+    pub handle_old_dirs_on_startup: bool,
 }
 
 impl Config {
@@ -59,6 +60,7 @@ impl Config {
 
             #[cfg(not(target_os = "windows"))]
             ffmpeg: PathBuf::from("/usr/local/bin/ffmpeg").into_os_string().into_string().unwrap(),
+            handle_old_dirs_on_startup: true
         };
 
         if write_config {

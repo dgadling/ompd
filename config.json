@@ -3,5 +3,6 @@
     "shot_output_dir": "C:\\Users\\Dave\\Pictures\\ompd",
     "vid_output_dir": "C:\\Users\\Dave\\Videos\\ompd",
     "max_sleep_secs": 180,
-    "ffmpeg": "C:\\Users\\Dave\\Desktop\\ffmpeg-6.0-full_build\\bin\\ffmpeg.exe"
+    "ffmpeg": "C:\\Users\\Dave\\Desktop\\ffmpeg-6.0-full_build\\bin\\ffmpeg.exe",
+    "handle_old_dirs_on_startup": true
 }
