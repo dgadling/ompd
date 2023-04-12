@@ -3,32 +3,39 @@ use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 
 pub struct DirManager {
-    current_dir: PathBuf,
-    root_dir: PathBuf,
+    current_shot_dir: PathBuf,
+    shot_dir: PathBuf,
+    vid_dir: PathBuf,
 }
 
 impl DirManager {
-    pub fn new(root_dir: &String) -> DirManager {
-        let root_path = PathBuf::from(root_dir);
+    pub fn new(shot_dir: &String, vid_dir: &String) -> DirManager {
+        let shot_dir = PathBuf::from(shot_dir);
+        let vid_dir = PathBuf::from(vid_dir);
 
         DirManager {
-            current_dir: Self::get_current_dir_in(&root_path),
-            root_dir: root_path,
+            current_shot_dir: Self::get_current_shot_dir_in(&shot_dir),
+            shot_dir,
+            vid_dir,
         }
     }
 
-    pub fn make_output_dir(&mut self) -> std::io::Result<&Path> {
-        self.current_dir = Self::get_current_dir_in(&self.root_dir);
+    pub fn make_shot_output_dir(&mut self) -> std::io::Result<&Path> {
+        self.current_shot_dir = Self::get_current_shot_dir_in(&self.shot_dir);
 
-        create_dir_all(&self.current_dir).expect("Couldn't create output directory!");
-        Ok(self.current_dir.as_path())
+        create_dir_all(&self.current_shot_dir).expect("Couldn't create output directory!");
+        Ok(self.current_shot_dir.as_path())
     }
 
-    pub fn current_dir(&self) -> &Path {
-        self.current_dir.as_path()
+    pub fn current_shot_dir(&self) -> &Path {
+        self.current_shot_dir.as_path()
     }
 
-    fn get_current_dir_in(root_dir: &Path) -> PathBuf {
+    pub fn vid_output_dir(&self) -> &Path {
+        self.vid_dir.as_path()
+    }
+
+    fn get_current_shot_dir_in(root_dir: &Path) -> PathBuf {
         let now = Local::now();
 
         root_dir

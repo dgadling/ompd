@@ -8,7 +8,8 @@ use std::path::Path;
 pub struct Config {
     pub interval: u64,
     pub max_sleep_secs: i64,
-    pub output_dir: String,
+    pub shot_output_dir: String,
+    pub vid_output_dir: String,
 }
 
 impl Config {
@@ -40,8 +41,14 @@ impl Config {
         let new_config = Config {
             interval: 20,
             max_sleep_secs: 180,
-            output_dir: home
+            shot_output_dir: home
                 .join("Pictures")
+                .join("ompd")
+                .into_os_string()
+                .into_string()
+                .unwrap(),
+            vid_output_dir: home
+                .join("Videos")
                 .join("ompd")
                 .into_os_string()
                 .into_string()

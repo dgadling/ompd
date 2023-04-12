@@ -1,5 +1,6 @@
 {
     "interval": 20,
-    "output_dir": "C:\\Users\\Dave\\Pictures\\ompd",
+    "shot_output_dir": "C:\\Users\\Dave\\Pictures\\ompd",
+    "vid_output_dir": "C:\\Users\\Dave\\Videos\\ompd",
     "max_sleep_secs": 180
 }

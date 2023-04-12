@@ -11,13 +11,13 @@ use std::thread;
 
 pub fn run(config: Config) {
     let sleep_interval = std::time::Duration::from_secs(config.interval);
-    let mut d = DirManager::new(&config.output_dir);
+    let mut d = DirManager::new(&config.shot_output_dir, &config.vid_output_dir);
     let mut c = Capturer::new(&sleep_interval);
 
     let starting_time = Local::now();
     let mut last_time = starting_time;
 
-    let made_output_d = d.make_output_dir();
+    let made_output_d = d.make_shot_output_dir();
     if let Err(e) = made_output_d {
         error!("Couldn't make an output directory: {e:?}");
         panic!("Couldn't make an output directory!");
@@ -49,7 +49,7 @@ pub fn run(config: Config) {
             }
         }
 
-        c.store(capture_result.unwrap(), d.current_dir());
+        c.store(capture_result.unwrap(), d.current_shot_dir());
         last_time = now;
 
         thread::sleep(sleep_interval);

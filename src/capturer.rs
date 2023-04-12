@@ -104,7 +104,7 @@ impl Capturer {
         info!("Looks like we've been away for a while ({elapsed_secs:?} seconds).");
 
         let filler_frame_path = dir_manager
-            .current_dir()
+            .current_shot_dir()
             .join(format!("{:05}.png", self.curr_frame));
 
         info!("Creating filler frame @ {filler_frame_path:?}");
@@ -118,7 +118,7 @@ impl Capturer {
             symlink_file(
                 &filler_frame_path,
                 dir_manager
-                    .current_dir()
+                    .current_shot_dir()
                     .join(format!("{:05}.png", self.curr_frame + n)),
             )?;
         }
@@ -129,7 +129,7 @@ impl Capturer {
     }
 
     fn get_curr_frame(&self, dir_manager: &mut DirManager) -> std::io::Result<FrameCounter> {
-        let dir = dir_manager.current_dir();
+        let dir = dir_manager.current_shot_dir();
 
         debug!("Examining {dir:?}");
         let mut count: FrameCounter = 0;
