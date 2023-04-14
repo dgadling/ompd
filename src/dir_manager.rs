@@ -1,6 +1,10 @@
 use chrono::{Datelike, Local};
+use log::{debug, warn};
 use std::fs::create_dir_all;
+use std::io::{BufReader, BufWriter};
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
+use zstd::DEFAULT_COMPRESSION_LEVEL;
 
 pub struct DirManager {
     current_shot_dir: PathBuf,
@@ -40,6 +44,54 @@ impl DirManager {
 
     pub fn get_vid_output_dir(&self) -> PathBuf {
         self.vid_dir.clone()
+    }
+
+    pub fn compress(target: &Path) {
+        for entry in WalkDir::new(target).into_iter().filter_map(|e| e.ok()) {
+            if entry.path_is_symlink() {
+                debug!("Found a link {entry:?}, skipping!");
+                continue;
+            }
+
+            let extension_maybe = entry.path().extension();
+            let extension = match extension_maybe {
+                Some(e) => e.to_os_string(),
+                None => {
+                    debug!("No extension on {entry:?} eh? carry on!");
+                    continue;
+                }
+            };
+
+            if extension != "png" {
+                debug!("Found non-png {entry:?}, skip!");
+                continue;
+            }
+
+            let compressed = Self::actually_compress(entry.path());
+            match compressed {
+                Err(e) => {
+                    warn!("Some issue with {entry:?}: {e:?}");
+                }
+                Ok(_) => {
+                    debug!("Compressed!");
+                }
+            }
+        }
+    }
+
+    fn actually_compress(entry: &Path) -> Result<(), anyhow::Error> {
+        let mut new_file_name = entry.as_os_str().to_owned();
+        new_file_name.push(".zst");
+
+        let orig_file = std::fs::File::open(entry)?;
+        let reader = BufReader::new(&orig_file);
+
+        let compressed_file = std::fs::File::create(&new_file_name)?;
+        let writer = BufWriter::new(&compressed_file);
+
+        zstd::stream::copy_encode(reader, writer, DEFAULT_COMPRESSION_LEVEL)?;
+
+        Ok(())
     }
 
     fn get_current_shot_dir_in(root_dir: &Path) -> PathBuf {
