@@ -10,6 +10,7 @@ pub struct Config {
     pub max_sleep_secs: i64,
     pub shot_output_dir: String,
     pub vid_output_dir: String,
+    pub ffmpeg: String,
 }
 
 impl Config {
@@ -53,6 +54,11 @@ impl Config {
                 .into_os_string()
                 .into_string()
                 .unwrap(),
+            #[cfg(target_os = "windows")]
+            ffmpeg: home.join("Desktop").join("ffmpeg-6.0-full_build").join("bin").join("ffmpeg.exe").into_os_string().into_string().unwrap(),
+
+            #[cfg(not(target_os = "windows"))]
+            ffmpeg: PathBuf::from("/usr/local/bin/ffmpeg").into_os_string().into_string().unwrap(),
         };
 
         if write_config {
