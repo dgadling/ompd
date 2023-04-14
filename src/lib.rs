@@ -1,18 +1,21 @@
 mod capturer;
 pub mod config;
 mod dir_manager;
+pub mod movie_maker;
 
 use capturer::Capturer;
 use chrono::Local;
 use config::Config;
 use dir_manager::DirManager;
 use log::{error, info};
+use movie_maker::MovieMaker;
 use std::thread;
 
 pub fn run(config: Config) {
     let sleep_interval = std::time::Duration::from_secs(config.interval);
     let mut d = DirManager::new(&config.shot_output_dir, &config.vid_output_dir);
     let mut c = Capturer::new(&sleep_interval);
+    let m = MovieMaker::new(d.vid_output_dir(), "png", 860, 360);
 
     let starting_time = Local::now();
     let mut last_time = starting_time;
@@ -53,6 +56,7 @@ pub fn run(config: Config) {
 
                     // TODO: Fire up a resizer, gap filler, and movie maker for the previous day. Do this before
                     // getting ready for today to make sure we have the right path to make movies in.
+                    m.make_movie_from(d.current_shot_dir());
 
                     let made_output_dir = d.make_shot_output_dir();
                     if let Err(e) = made_output_dir {
