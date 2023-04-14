@@ -13,6 +13,9 @@ impl DirManager {
         let shot_dir = PathBuf::from(shot_dir);
         let vid_dir = PathBuf::from(vid_dir);
 
+        create_dir_all(&shot_dir).expect("Couldn't create directory for shots!");
+        create_dir_all(&vid_dir).expect("Couldn't create directory for videos!");
+
         DirManager {
             current_shot_dir: Self::get_current_shot_dir_in(&shot_dir),
             shot_dir,
