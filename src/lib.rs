@@ -41,11 +41,27 @@ pub fn run(config: Config) {
             // At this point we know we went *forward* in time since max_sleep_secs can only be
             // positive.
             let change_result = c.deal_with_change(&mut d, &last_time, &now);
-            if let Err(e) = change_result {
-                error!("Some issue dealing with a decent time gap: {e:?}");
-                info!("Going to sleep and try again");
-                thread::sleep(sleep_interval);
-                continue;
+            match change_result {
+                Err(e) => {
+                    error!("Some issue dealing with a decent time gap: {e:?}");
+                    info!("Going to sleep and try again");
+                    thread::sleep(sleep_interval);
+                    continue;
+                }
+                Ok(capturer::ChangeType::NewDay) => {
+                    info!("Brand new day! Let's goooooo");
+
+                    // TODO: Fire up a resizer, gap filler, and movie maker for the previous day. Do this before
+                    // getting ready for today to make sure we have the right path to make movies in.
+
+                    let made_output_dir = d.make_shot_output_dir();
+                    if let Err(e) = made_output_dir {
+                        error!("Couldn't make new output directory?!: {e:?}");
+                        break;
+                    }
+                    c.set_current_frame(0);
+                }
+                Ok(capturer::ChangeType::Nop) => {}
             }
         }
 

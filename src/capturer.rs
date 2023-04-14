@@ -30,6 +30,11 @@ pub struct Capturer {
     curr_frame: u32,
 }
 
+pub enum ChangeType {
+    Nop,
+    NewDay,
+}
+
 impl Capturer {
     pub fn new(sleep_interval: &std::time::Duration) -> Capturer {
         Capturer {
@@ -44,14 +49,15 @@ impl Capturer {
         dir_manager: &mut DirManager,
         prev_time: &DateTime<Local>,
         curr_time: &DateTime<Local>,
-    ) -> Result<(), Error> {
+    ) -> Result<ChangeType, Error> {
         if curr_time.ordinal() != prev_time.ordinal() {
             // Obviously this could be a new month, or even new year. Whatever, we'll be fine either way!
             // The point is it simply not the same day as it was last time we did something.
-            self.deal_with_new_day(dir_manager)
+            Ok(ChangeType::NewDay)
         } else {
             // Same day, so there was just a blackout. nbd.
-            self.deal_with_blackout((*curr_time - *prev_time).num_seconds() as u64, dir_manager)
+            self.deal_with_blackout((*curr_time - *prev_time).num_seconds() as u64, dir_manager)?;
+            Ok(ChangeType::Nop)
         }
     }
 
@@ -68,16 +74,8 @@ impl Capturer {
         }
     }
 
-    fn deal_with_new_day(&mut self, dir_manager: &mut DirManager) -> Result<(), Error> {
-        info!("Brand new day! Let's goooooo");
-
-        // TODO: Fire up a resizer, gap filler, and movie maker for the previous day. Do this before
-        // getting ready for today to make sure we have the right path to make movies in.
-
-        dir_manager.make_output_dir()?;
-        self.curr_frame = 0;
-
-        Ok(())
+    pub fn set_current_frame(&mut self, new_curr_frame: u32) {
+        self.curr_frame = new_curr_frame;
     }
 
     pub fn capture_screen(&self) -> Result<Image, anyhow::Error> {
