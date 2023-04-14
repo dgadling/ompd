@@ -45,7 +45,7 @@ impl Capturer {
         prev_time: &DateTime<Local>,
         curr_time: &DateTime<Local>,
     ) -> Result<(), Error> {
-        if curr_time.ordinal() != prev_time.ordinal()  {
+        if curr_time.ordinal() != prev_time.ordinal() {
             // Obviously this could be a new month, or even new year. Whatever, we'll be fine either way!
             // The point is it simply not the same day as it was last time we did something.
             self.deal_with_new_day(dir_manager)
