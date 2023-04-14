@@ -1,14 +1,15 @@
 use log::{debug, info, warn};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 pub struct MovieMaker {
     output_dir: PathBuf,
     frame_rate: u32,
     file_extension: String,
-    input_file_format: String,
     output_width: u32,
     output_height: u32,
+    ffmpeg: String,
 }
 
 impl MovieMaker {
@@ -17,19 +18,76 @@ impl MovieMaker {
         file_extension: &str,
         output_width: u32,
         output_height: u32,
+        ffmpeg: &str,
     ) -> MovieMaker {
         MovieMaker {
             output_dir: PathBuf::from(output_dir),
             frame_rate: ((9 * 60 * 60) / 20) / 60,
             file_extension: file_extension.to_string(),
-            input_file_format: format!("%05d.{:?}", file_extension),
             output_width,
             output_height,
+            ffmpeg: ffmpeg.to_string(),
         }
     }
 
     pub fn make_movie_from(&self, input_dir: &Path) {
         self.fix_missing_frames(input_dir);
+
+        let mut ancestors = input_dir.ancestors();
+        let day = ancestors
+            .next()
+            .unwrap()
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap();
+        let month = ancestors
+            .next()
+            .unwrap()
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap();
+        let year = ancestors
+            .next()
+            .unwrap()
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap();
+
+        let out_f = format!("ompd-{}-{}-{}.mkv", year, month, day);
+
+        let mut to_run = Command::new(&self.ffmpeg);
+        to_run.args([
+            // Frame rate to generate
+            "-r",
+            &self.frame_rate.to_string(),
+            // Where to find input frames and what format to expect
+            "-i",
+            &input_dir
+                .join(format!("%05d.{}", self.file_extension))
+                .to_string_lossy(),
+            // Output size
+            "-s",
+            &format!("{}x{}", self.output_width, self.output_height),
+            // Pixel format -- maybe only relevant on MacOS?
+            "-pix_fmt",
+            "yuv420p",
+            // Clobber existing files
+            "-y",
+            // Where to store the output
+            &self.output_dir.join(out_f).to_string_lossy(),
+        ]);
+
+        debug!("{:?}", to_run);
+
+        let output = to_run.output().expect("Failed to run ffmpeg :(");
+        debug!("Finished with: {:?}", output.status);
+
+        if !output.status.success() {
+            panic!("Some issue running ffmpeg! Abort abort abort!");
+        }
     }
 
     pub fn fix_missing_frames(&self, in_dir: &Path) {
