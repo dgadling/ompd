@@ -3,9 +3,6 @@ name = "ompd"
 version = "0.1.0"
 edition = "2021"
 
-[env]
-FFMPEG_ROOT_DIR = "C:\\Users\\Dave\\Desktop\\ffmpeg-6.0-full_build"
-
 [dependencies]
 anyhow = "1.0.70"
 chrono = "0.4.24"
