@@ -34,8 +34,12 @@ impl DirManager {
         self.current_shot_dir.as_path()
     }
 
-    pub fn vid_output_dir(&self) -> &Path {
-        self.vid_dir.as_path()
+    pub fn get_current_shot_dir(&self) -> PathBuf {
+        self.current_shot_dir.clone()
+    }
+
+    pub fn get_vid_output_dir(&self) -> PathBuf {
+        self.vid_dir.clone()
     }
 
     fn get_current_shot_dir_in(root_dir: &Path) -> PathBuf {

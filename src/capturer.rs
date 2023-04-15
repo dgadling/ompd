@@ -46,7 +46,7 @@ impl Capturer {
 
     pub fn deal_with_change(
         &mut self,
-        dir_manager: &mut DirManager,
+        dir_manager: &DirManager,
         prev_time: &DateTime<Local>,
         curr_time: &DateTime<Local>,
     ) -> Result<ChangeType, Error> {
@@ -97,7 +97,7 @@ impl Capturer {
     fn deal_with_blackout(
         &mut self,
         elapsed_secs: u64,
-        dir_manager: &mut DirManager,
+        dir_manager: &DirManager,
     ) -> Result<(), Error> {
         info!("Looks like we've been away for a while ({elapsed_secs:?} seconds).");
 

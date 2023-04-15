@@ -15,7 +15,6 @@ pub fn run(config: Config) {
     let sleep_interval = std::time::Duration::from_secs(config.interval);
     let mut d = DirManager::new(&config.shot_output_dir, &config.vid_output_dir);
     let mut c = Capturer::new(&sleep_interval);
-    let m = MovieMaker::new(d.vid_output_dir(), "png", 860, 360, &config.ffmpeg);
 
     let starting_time = Local::now();
     let mut last_time = starting_time;
@@ -43,7 +42,7 @@ pub fn run(config: Config) {
         if (now - last_time).num_seconds() > config.max_sleep_secs {
             // At this point we know we went *forward* in time since max_sleep_secs can only be
             // positive.
-            let change_result = c.deal_with_change(&mut d, &last_time, &now);
+            let change_result = c.deal_with_change(&d, &last_time, &now);
             match change_result {
                 Err(e) => {
                     error!("Some issue dealing with a decent time gap: {e:?}");
@@ -54,10 +53,17 @@ pub fn run(config: Config) {
                 Ok(capturer::ChangeType::NewDay) => {
                     info!("Brand new day! Let's goooooo");
 
-                    // TODO: Fire up a resizer, gap filler, and movie maker for the previous day. Do this before
-                    // getting ready for today to make sure we have the right path to make movies in.
-                    m.make_movie_from(d.current_shot_dir());
+                    let shot_dir = d.get_current_shot_dir();
+                    let output_dir = d.get_vid_output_dir();
+                    let ffmpeg_path = config.ffmpeg.clone();
+                    thread::spawn(move || {
+                        // TODO: Fire up a resizer before doing the movie making, compress when done.
+                        let m =
+                            MovieMaker::new(output_dir.as_path(), "png", 860, 360, &ffmpeg_path);
+                        m.make_movie_from(shot_dir.as_path());
+                    });
 
+                    // Get ready for today to make sure we have the right path to make movies in.
                     let made_output_dir = d.make_shot_output_dir();
                     if let Err(e) = made_output_dir {
                         error!("Couldn't make new output directory?!: {e:?}");
