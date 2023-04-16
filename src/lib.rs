@@ -59,12 +59,15 @@ pub fn run(config: Config) {
                     thread::spawn(move || {
                         // TODO: Fire up a resizer before doing the movie making, compress when done.
                         info!("Launching movie maker");
-                        let m =
-                            MovieMaker::new(output_dir.as_path(), "png", 860, 360, &ffmpeg_path);
+                        let m = MovieMaker::new(
+                            output_dir.as_path(),
+                            "png",
+                            860,
+                            360,
+                            &ffmpeg_path,
+                            true,
+                        );
                         m.make_movie_from(shot_dir.as_path());
-                        info!("Compressing stills");
-                        DirManager::compress(&shot_dir);
-                        info!("All done with yesterday!");
                     });
 
                     // Get ready for today to make sure we have the right path to make movies in.

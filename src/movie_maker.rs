@@ -1,3 +1,4 @@
+use crate::DirManager;
 use log::{debug, info, warn};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -10,6 +11,7 @@ pub struct MovieMaker {
     output_width: u32,
     output_height: u32,
     ffmpeg: String,
+    compress_when_done: bool,
 }
 
 impl MovieMaker {
@@ -19,6 +21,7 @@ impl MovieMaker {
         output_width: u32,
         output_height: u32,
         ffmpeg: &str,
+        compress_when_done: bool,
     ) -> MovieMaker {
         MovieMaker {
             output_dir: PathBuf::from(output_dir),
@@ -27,6 +30,7 @@ impl MovieMaker {
             output_width,
             output_height,
             ffmpeg: ffmpeg.to_string(),
+            compress_when_done,
         }
     }
 
@@ -88,6 +92,13 @@ impl MovieMaker {
         if !output.status.success() {
             panic!("Some issue running ffmpeg! Abort abort abort!");
         }
+
+        if self.compress_when_done {
+            info!("Compressing stills");
+            DirManager::compress(&input_dir);
+        }
+        info!("All done with {input_dir:?}!");
+
     }
 
     pub fn fix_missing_frames(&self, in_dir: &Path) {
