@@ -176,24 +176,24 @@ impl Capturer {
     }
 
     fn human_duration(duration_secs: u64) -> String {
+        let mut elapsed;
         let cleaned;
-        let unit;
 
         if duration_secs >= 3600 {
-            cleaned = duration_secs / 3600;
-            unit = "hr";
+            cleaned = duration_secs as f32 / 3600.0;
+            elapsed = format!("~ {:.1} hr", cleaned);
         } else if duration_secs > 60 {
-            cleaned = duration_secs / 60;
-            unit = "min";
+            cleaned = duration_secs as f32 / 60.0;
+            elapsed = format!("~ {:.0} min", cleaned);
         } else {
-            cleaned = duration_secs;
-            unit = "sec";
+            cleaned = duration_secs as f32;
+            elapsed = format!("~ {} sec", duration_secs);
         }
 
-        if cleaned > 1 {
-            format!("~ {cleaned} {unit}s")
-        } else {
-            format!("~ {cleaned} {unit}")
+        if cleaned > 1.0 {
+            elapsed.push('s');
         }
+
+        elapsed
     }
 }
