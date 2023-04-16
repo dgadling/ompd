@@ -1,3 +1,4 @@
+use crate::Config;
 use crate::DirManager;
 use log::{debug, info, warn};
 use std::fs;
@@ -17,19 +18,16 @@ pub struct MovieMaker {
 impl MovieMaker {
     pub fn new(
         output_dir: &Path,
-        file_extension: &str,
-        output_width: u32,
-        output_height: u32,
-        ffmpeg: &str,
+        config: Config,
         compress_when_done: bool,
     ) -> MovieMaker {
         MovieMaker {
             output_dir: PathBuf::from(output_dir),
             frame_rate: ((9 * 60 * 60) / 20) / 60,
-            file_extension: file_extension.to_string(),
-            output_width,
-            output_height,
-            ffmpeg: ffmpeg.to_string(),
+            file_extension: config.shot_type,
+            output_width: config.vid_width,
+            output_height: config.vid_height,
+            ffmpeg: config.ffmpeg,
             compress_when_done,
         }
     }

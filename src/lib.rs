@@ -55,17 +55,14 @@ pub fn run(config: Config) {
 
                     let shot_dir = d.get_current_shot_dir();
                     let output_dir = d.get_vid_output_dir();
-                    let ffmpeg_path = config.ffmpeg.clone();
+                    let config_to_move = config.clone();
                     thread::spawn(move || {
                         // TODO: Fire up a resizer before doing the movie making, compress when done.
                         info!("Launching movie maker");
                         let m = MovieMaker::new(
                             output_dir.as_path(),
-                            "png",
-                            860,
-                            360,
-                            &ffmpeg_path,
-                            true,
+                            config_to_move,
+                            true /* compress_when_done */,
                         );
                         m.make_movie_from(shot_dir.as_path());
                     });

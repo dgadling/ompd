@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::path::Path;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
     pub interval: u64,
     pub max_sleep_secs: i64,
@@ -12,6 +12,9 @@ pub struct Config {
     pub vid_output_dir: String,
     pub ffmpeg: String,
     pub handle_old_dirs_on_startup: bool,
+    pub vid_width: u32,
+    pub vid_height: u32,
+    pub shot_type: String,
 }
 
 impl Config {
@@ -56,11 +59,24 @@ impl Config {
                 .into_string()
                 .unwrap(),
             #[cfg(target_os = "windows")]
-            ffmpeg: home.join("Desktop").join("ffmpeg-6.0-full_build").join("bin").join("ffmpeg.exe").into_os_string().into_string().unwrap(),
+            ffmpeg: home
+                .join("Desktop")
+                .join("ffmpeg-6.0-full_build")
+                .join("bin")
+                .join("ffmpeg.exe")
+                .into_os_string()
+                .into_string()
+                .unwrap(),
 
             #[cfg(not(target_os = "windows"))]
-            ffmpeg: PathBuf::from("/usr/local/bin/ffmpeg").into_os_string().into_string().unwrap(),
-            handle_old_dirs_on_startup: true
+            ffmpeg: PathBuf::from("/usr/local/bin/ffmpeg")
+                .into_os_string()
+                .into_string()
+                .unwrap(),
+            handle_old_dirs_on_startup: true,
+            vid_width: 860,
+            vid_height: 360,
+            shot_type: "png".to_string(),
         };
 
         if write_config {
