@@ -184,7 +184,7 @@ impl Capturer {
             elapsed = format!("~ {:.1} hr", cleaned);
         } else if duration_secs > 60 {
             cleaned = duration_secs as f32 / 60.0;
-            elapsed = format!("~ {:.0} min", cleaned);
+            elapsed = format!("~ {} min", cleaned);
         } else {
             cleaned = duration_secs as f32;
             elapsed = format!("~ {} sec", duration_secs);
