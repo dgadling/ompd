@@ -93,7 +93,7 @@ impl MovieMaker {
 
         if self.compress_when_done {
             info!("Compressing stills");
-            DirManager::compress(&input_dir);
+            DirManager::compress(input_dir);
         }
         info!("All done with {input_dir:?}!");
 
