@@ -17,12 +17,11 @@ pub struct MovieMaker {
 
 impl MovieMaker {
     pub fn new(
-        output_dir: &Path,
         config: Config,
         compress_when_done: bool,
     ) -> MovieMaker {
         MovieMaker {
-            output_dir: PathBuf::from(output_dir),
+            output_dir: PathBuf::from(config.vid_output_dir),
             frame_rate: ((9 * 60 * 60) / 20) / 60,
             file_extension: config.shot_type,
             output_width: config.vid_width,

@@ -9,7 +9,6 @@ use zstd::DEFAULT_COMPRESSION_LEVEL;
 pub struct DirManager {
     current_shot_dir: PathBuf,
     shot_dir: PathBuf,
-    vid_dir: PathBuf,
 }
 
 impl DirManager {
@@ -18,12 +17,11 @@ impl DirManager {
         let vid_dir = PathBuf::from(vid_dir);
 
         create_dir_all(&shot_dir).expect("Couldn't create directory for shots!");
-        create_dir_all(&vid_dir).expect("Couldn't create directory for videos!");
+        create_dir_all(vid_dir).expect("Couldn't create directory for videos!");
 
         DirManager {
             current_shot_dir: Self::get_current_shot_dir_in(&shot_dir),
             shot_dir,
-            vid_dir,
         }
     }
 
@@ -40,10 +38,6 @@ impl DirManager {
 
     pub fn get_current_shot_dir(&self) -> PathBuf {
         self.current_shot_dir.clone()
-    }
-
-    pub fn get_vid_output_dir(&self) -> PathBuf {
-        self.vid_dir.clone()
     }
 
     pub fn compress(target: &Path) {

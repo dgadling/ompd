@@ -1,3 +1,5 @@
+mod back_filler;
+use back_filler::BackFiller;
 mod capturer;
 pub mod config;
 mod dir_manager;
@@ -7,7 +9,7 @@ use capturer::Capturer;
 use chrono::Local;
 use config::Config;
 use dir_manager::DirManager;
-use log::{error, info};
+use log::{error, info, warn};
 use movie_maker::MovieMaker;
 use std::thread;
 
@@ -18,6 +20,22 @@ pub fn run(config: Config) {
 
     let starting_time = Local::now();
     let mut last_time = starting_time;
+
+    if config.handle_old_dirs_on_startup {
+        let config_to_move = config.clone();
+        let starting_time_to_move = starting_time;
+
+        let backfiller_maybe = thread::Builder::new().name("backfill".into()).spawn(move || {
+            info!("Going back and re-making movies!");
+
+            let b = BackFiller::new(config_to_move, starting_time_to_move);
+            b.run();
+        });
+
+        if let Err(e) = backfiller_maybe {
+            warn!("Couldn't spawn backfill thread! {e:?}");
+        }
+    }
 
     let made_output_d = d.make_shot_output_dir();
     if let Err(e) = made_output_d {
@@ -54,18 +72,20 @@ pub fn run(config: Config) {
                     info!("Brand new day! Let's goooooo");
 
                     let shot_dir = d.get_current_shot_dir();
-                    let output_dir = d.get_vid_output_dir();
                     let config_to_move = config.clone();
-                    thread::spawn(move || {
+                    let moviemaker_maybe = thread::Builder::new().name("moviemaker".into()).spawn(move || {
                         // TODO: Fire up a resizer before doing the movie making, compress when done.
                         info!("Launching movie maker");
                         let m = MovieMaker::new(
-                            output_dir.as_path(),
                             config_to_move,
                             true /* compress_when_done */,
                         );
                         m.make_movie_from(shot_dir.as_path());
                     });
+
+                    if let Err(e) = moviemaker_maybe {
+                        warn!("Couldn't spawn movie maker thread! {e:?}");
+                    }
 
                     // Get ready for today to make sure we have the right path to make movies in.
                     let made_output_dir = d.make_shot_output_dir();
