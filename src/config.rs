@@ -2,7 +2,7 @@ use home::home_dir;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {

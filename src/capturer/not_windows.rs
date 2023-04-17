@@ -1,6 +1,5 @@
 use anyhow::Error;
 use screenshots::{Image, Screen};
-use std::process;
 
 pub fn get_screenshot(screen: Screen) -> Result<Image, Error> {
     /*
