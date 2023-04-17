@@ -23,7 +23,10 @@ struct Discovered {
 
 impl Discovered {
     fn to_shot_dir_in(&self, root_dir: &Path) -> PathBuf {
-        root_dir.join(format!("{}", self.year)).join(format!("{:02}", self.month)).join(format!("{:02}", self.day))
+        root_dir
+            .join(format!("{}", self.year))
+            .join(format!("{:02}", self.month))
+            .join(format!("{:02}", self.day))
     }
 }
 

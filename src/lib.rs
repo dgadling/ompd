@@ -25,12 +25,14 @@ pub fn run(config: Config) {
         let config_to_move = config.clone();
         let starting_time_to_move = starting_time;
 
-        let backfiller_maybe = thread::Builder::new().name("backfill".into()).spawn(move || {
-            info!("Going back and re-making movies!");
+        let backfiller_maybe = thread::Builder::new()
+            .name("backfill".into())
+            .spawn(move || {
+                info!("Going back and re-making movies!");
 
-            let b = BackFiller::new(config_to_move, starting_time_to_move);
-            b.run();
-        });
+                let b = BackFiller::new(config_to_move, starting_time_to_move);
+                b.run();
+            });
 
         if let Err(e) = backfiller_maybe {
             warn!("Couldn't spawn backfill thread! {e:?}");
@@ -73,15 +75,18 @@ pub fn run(config: Config) {
 
                     let shot_dir = d.get_current_shot_dir();
                     let config_to_move = config.clone();
-                    let moviemaker_maybe = thread::Builder::new().name("moviemaker".into()).spawn(move || {
-                        // TODO: Fire up a resizer before doing the movie making, compress when done.
-                        info!("Launching movie maker");
-                        let m = MovieMaker::new(
-                            config_to_move,
-                            true /* compress_when_done */,
-                        );
-                        m.make_movie_from(shot_dir.as_path());
-                    });
+                    let moviemaker_maybe =
+                        thread::Builder::new()
+                            .name("moviemaker".into())
+                            .spawn(move || {
+                                // TODO: Fire up a resizer before doing the movie making, compress when done.
+                                info!("Launching movie maker");
+                                let m = MovieMaker::new(
+                                    config_to_move,
+                                    true, /* compress_when_done */
+                                );
+                                m.make_movie_from(shot_dir.as_path());
+                            });
 
                     if let Err(e) = moviemaker_maybe {
                         warn!("Couldn't spawn movie maker thread! {e:?}");

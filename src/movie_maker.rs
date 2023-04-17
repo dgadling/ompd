@@ -16,10 +16,7 @@ pub struct MovieMaker {
 }
 
 impl MovieMaker {
-    pub fn new(
-        config: Config,
-        compress_when_done: bool,
-    ) -> MovieMaker {
+    pub fn new(config: Config, compress_when_done: bool) -> MovieMaker {
         MovieMaker {
             output_dir: PathBuf::from(config.vid_output_dir),
             frame_rate: ((9 * 60 * 60) / 20) / 60,
@@ -95,7 +92,6 @@ impl MovieMaker {
             DirManager::compress(input_dir);
         }
         info!("All done with {input_dir:?}!");
-
     }
 
     pub fn fix_missing_frames(&self, in_dir: &Path) {
