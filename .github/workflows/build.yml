@@ -1,5 +1,4 @@
 name: build
-
 on:
   push:
     branches: [ "master" ]
@@ -16,6 +15,7 @@ jobs:
     name: Linux - ompd - build and lint
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -33,6 +33,7 @@ jobs:
     name: Windows - ompd - build and lint
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
