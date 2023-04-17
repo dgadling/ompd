@@ -25,10 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
-          override: true
           components: rustfmt, clippy
       - if: ${{ matrix.combos.extra_step }}
         run: ${{ matrix.combos.extra_step }}
