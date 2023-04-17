@@ -50,3 +50,21 @@ jobs:
         run: cargo clippy -- -D warnings
       - name: Check format
         run: cargo fmt -- --check
+
+  build-lint-mac:
+    name: MacOS - ompd - build and lint
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      - name: Build
+        run: cargo build --verbose
+      - name: Lint
+        run: cargo clippy -- -D warnings
+      - name: Check format
+        run: cargo fmt -- --check
