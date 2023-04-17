@@ -2,7 +2,10 @@ use home::home_dir;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+
+#[cfg(not(target_os = "windows"))]
+use std::path::PathBuf;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
