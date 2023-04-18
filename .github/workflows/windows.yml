@@ -1,4 +1,4 @@
-name: build
+name: Build Windows (x86_64)
 on:
   push:
     branches: [ "master" ]
@@ -12,24 +12,13 @@ env:
 
 jobs:
   build-lint-format:
-    strategy:
-      matrix:
-        combos:
-          - os: ubuntu-latest
-            extra_step: >-
-              sudo apt-get update && sudo apt-get install
-              --no-install-recommends -y libdbus-1-dev dbus
-          - os: windows-latest
-          - os: macos-latest
-    runs-on: ${{ matrix.combos.os }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt, clippy
-      - if: ${{ matrix.combos.extra_step }}
-        run: ${{ matrix.combos.extra_step }}
       - name: Build
         run: cargo build --verbose
       - name: Lint

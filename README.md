@@ -1,4 +1,6 @@
-[![build](https://github.com/dgadling/ompd/workflows/build/badge.svg)](https://github.com/dgadling/ompd/actions)
+[![Build Linux](https://github.com/dgadling/ompd/workflows/linux/badge.svg)](https://github.com/dgadling/ompd/actions)
+[![Build Win64](https://github.com/dgadling/ompd/workflows/windows/badge.svg)](https://github.com/dgadling/ompd/actions)
+[![Build Mac Intel](https://github.com/dgadling/ompd/workflows/mac/badge.svg)](https://github.com/dgadling/ompd/actions)
 # ompd
 
 Around 2009/2010 I somehow found @danpaluska (https://www.youtube.com/danpaluska) doing blurry timelapses of his work computer during the day.
