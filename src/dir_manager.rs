@@ -1,9 +1,8 @@
 use chrono::{Datelike, Local};
 use log::{debug, warn};
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, read_dir};
 use std::io::{BufReader, BufWriter};
 use std::path::{Path, PathBuf};
-use walkdir::WalkDir;
 use zstd::DEFAULT_COMPRESSION_LEVEL;
 
 pub struct DirManager {
@@ -41,13 +40,22 @@ impl DirManager {
     }
 
     pub fn compress(target: &Path) {
-        for entry in WalkDir::new(target).into_iter().filter_map(|e| e.ok()) {
-            if entry.path_is_symlink() {
+        for entry_maybe in read_dir(target).unwrap() {
+            let entry = match entry_maybe {
+                Ok(e) => e,
+                Err(e) => {
+                    debug!("{e:?}");
+                    continue;
+                }
+            };
+
+            if entry.file_type().unwrap().is_symlink() {
                 debug!("Found a link {entry:?}, skipping!");
                 continue;
             }
 
-            let extension_maybe = entry.path().extension();
+            let entry_path = entry.path();
+            let extension_maybe = entry_path.extension();
             let extension = match extension_maybe {
                 Some(e) => e.to_os_string(),
                 None => {
@@ -61,7 +69,7 @@ impl DirManager {
                 continue;
             }
 
-            let compressed = Self::actually_compress(entry.path());
+            let compressed = Self::actually_compress(entry_path.as_path());
             match compressed {
                 Err(e) => {
                     warn!("Some issue with {entry:?}: {e:?}");
