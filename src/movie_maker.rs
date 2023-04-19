@@ -101,7 +101,6 @@ impl MovieMaker {
 
         debug!("Gathering up frames in {in_dir:?}");
         for entry_maybe in fs::read_dir(in_dir).unwrap() {
-            // }.into_iter().filter_map(|e| e.ok()) {
             let entry = match entry_maybe {
                 Ok(e) => e,
                 Err(e) => {
