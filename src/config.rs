@@ -2,7 +2,8 @@ use home::home_dir;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::path::Path;
+use std::fs::create_dir_all;
+use which::which;
 
 #[cfg(not(target_os = "windows"))]
 use std::path::PathBuf;
@@ -22,7 +23,11 @@ pub struct Config {
 
 impl Config {
     pub fn get_config() -> Config {
-        let config_path = Path::new("config.json");
+        let home = home_dir().expect("Couldn't figure out our home directory?!");
+
+        create_dir_all(home.join("ompd")).expect("Couldn't create our own directory?!");
+
+        let config_path = home.join("ompd").join("config.json");
         let mut write_config = true;
 
         if config_path.exists() {
@@ -45,37 +50,36 @@ impl Config {
         }
 
         debug!("Making new base config");
-        let home = home_dir().expect("Couldn't figure out our home directory?!");
+        #[cfg(target_os = "windows")]
+        let ffmpeg_path_maybe = which("ffmpeg.exe");
+
+        #[cfg(not(target_os = "windows"))]
+        let ffmpeg_path_maybe = which("ffmpeg");
+
+        let ffmpeg_path = match ffmpeg_path_maybe {
+            Err(_) => {
+                warn!("Couldn't find a path to ffmpeg, making one up! You should update {config_path:?}");
+                "FIND SOMETHING TO PUT HERE".to_string()
+            }
+            Ok(p) => p.to_str().unwrap().to_string(),
+        };
+
         let new_config = Config {
             interval: 20,
             max_sleep_secs: 180,
             shot_output_dir: home
-                .join("Pictures")
                 .join("ompd")
+                .join("shots")
                 .into_os_string()
                 .into_string()
                 .unwrap(),
             vid_output_dir: home
-                .join("Videos")
                 .join("ompd")
+                .join("videos")
                 .into_os_string()
                 .into_string()
                 .unwrap(),
-            #[cfg(target_os = "windows")]
-            ffmpeg: home
-                .join("Desktop")
-                .join("ffmpeg-6.0-full_build")
-                .join("bin")
-                .join("ffmpeg.exe")
-                .into_os_string()
-                .into_string()
-                .unwrap(),
-
-            #[cfg(not(target_os = "windows"))]
-            ffmpeg: PathBuf::from("/usr/local/bin/ffmpeg")
-                .into_os_string()
-                .into_string()
-                .unwrap(),
+            ffmpeg: ffmpeg_path,
             handle_old_dirs_on_startup: true,
             vid_width: 860,
             vid_height: 360,
