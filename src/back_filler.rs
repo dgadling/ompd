@@ -65,7 +65,7 @@ impl BackFiller {
 
         let to_process = shot_coverage.difference(&vid_coverage);
 
-        let m = MovieMaker::new(self.config.clone(), false /* compress when done */);
+        let m = MovieMaker::new(self.config.clone());
 
         let root_shot_dir = PathBuf::from(&self.config.shot_output_dir);
         for dir in to_process {

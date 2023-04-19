@@ -81,10 +81,7 @@ pub fn run(config: Config) {
                             .spawn(move || {
                                 // TODO: Fire up a resizer before doing the movie making, compress when done.
                                 info!("Launching movie maker");
-                                let m = MovieMaker::new(
-                                    config_to_move,
-                                    true, /* compress_when_done */
-                                );
+                                let m = MovieMaker::new(config_to_move);
                                 m.make_movie_from(shot_dir.as_path());
                             });
 

@@ -16,7 +16,7 @@ pub struct MovieMaker {
 }
 
 impl MovieMaker {
-    pub fn new(config: Config, compress_when_done: bool) -> MovieMaker {
+    pub fn new(config: Config) -> MovieMaker {
         MovieMaker {
             output_dir: PathBuf::from(config.vid_output_dir),
             frame_rate: ((9 * 60 * 60) / 20) / 60,
@@ -24,7 +24,7 @@ impl MovieMaker {
             output_width: config.vid_width,
             output_height: config.vid_height,
             ffmpeg: config.ffmpeg,
-            compress_when_done,
+            compress_when_done: config.compress_shots,
         }
     }
 

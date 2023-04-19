@@ -16,6 +16,7 @@ pub struct Config {
     pub vid_width: u32,
     pub vid_height: u32,
     pub shot_type: String,
+    pub compress_shots: bool,
 }
 
 impl Config {
@@ -81,6 +82,7 @@ impl Config {
             vid_width: 860,
             vid_height: 360,
             shot_type: "png".to_string(),
+            compress_shots: false,
         };
 
         if write_config {
