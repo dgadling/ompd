@@ -72,6 +72,8 @@ impl BackFiller {
             info!("Launching movie maker for {dir:?}");
             m.make_movie_from(&dir.to_shot_dir_in(&root_shot_dir));
         }
+
+        info!("Done backfilling movies");
     }
 
     fn discover_vids(&self) -> Result<HashSet<Discovered>, Error> {
