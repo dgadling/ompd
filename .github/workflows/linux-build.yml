@@ -1,0 +1,43 @@
+name: Build Linux (x86_64)
+on:
+  workflow_call:
+    inputs:
+      upload_artifacts:
+        required: true
+        type: boolean
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-lint-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt, clippy
+      - name: Prep container
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libdbus-1-dev dbus
+      - name: Build (dbg)
+        run: cargo build --verbose --release
+      - name: Lint
+        run: cargo clippy -- -D warnings
+      - name: Check format
+        run: cargo fmt -- --check
+      - name: Archive binary
+        run: |
+          ARCHIVE_FILE=ompd-linux-x86_64.tar.gz
+          tar czvf $ARCHIVE_FILE -C target/x86_64-unknown-linux-gnu/release ompd
+          shasum -a 256 $ARCHIVE_FILE > $ARCHIVE_FILE.sha256
+        if: ${{ inputs.upload_artifacts }}
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries
+          path: |
+            *.tar.gz
+            *.sha256
