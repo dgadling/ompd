@@ -1,0 +1,49 @@
+name: "[ompd] Release"
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  CARGO_TERM_COLOR: always
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  mac:
+    uses: ./.github/workflows/mac-build.yml
+    with:
+      upload_artifacts: true
+
+  linux:
+    uses: ./.github/workflows/linux-build.yml
+    with:
+      upload_artifacts: true
+
+  windows:
+    uses: ./.github/workflows/windows-build.yml
+    with:
+      upload_artifacts: true
+
+  release:
+    name: Release
+    runs-on: ubunut-latest
+    needs:
+      - mac
+      - linux
+      - windows
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: binaries
+          path: binaries
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: binaries/*
