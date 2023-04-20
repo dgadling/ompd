@@ -112,6 +112,10 @@ impl MovieMaker {
                 }
             };
 
+            if entry.file_type().unwrap().is_symlink() {
+                continue;
+            }
+
             let extension = match entry.path().extension() {
                 Some(e) => e.to_os_string(),
                 None => {
@@ -123,6 +127,10 @@ impl MovieMaker {
             if extension == expected_extension {
                 found_frames.push(entry.path());
             }
+        }
+
+        if found_frames.is_empty() {
+            panic!("Uhh, no frames AT ALL in {in_dir:?}?!");
         }
 
         debug!("Sorting, to be safe");
