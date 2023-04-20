@@ -11,7 +11,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-lint-format:
+  run:
     uses: ./.github/workflows/linux-build.yml
     with:
       upload_artifacts: false

@@ -1,4 +1,4 @@
-name: Build Linux (x86_64)
+name: Build Windows (x86_64)
 on:
   workflow_call:
     inputs:
@@ -10,18 +10,14 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
+  windows:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt, clippy
-      - name: Prep container
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y libdbus-1-dev dbus
       - name: Build (dbg)
         run: cargo build --verbose
       - name: Check format
@@ -33,15 +29,16 @@ jobs:
         run: cargo build --verbose --release
       - name: Archive binary
         if: ${{ inputs.upload_artifacts }}
+        shell: bash
         run: |
-          ARCHIVE_FILE=ompd-linux-x86_64.tar.gz
-          tar czvf $ARCHIVE_FILE -C target/x86_64-unknown-linux-gnu/release ompd
-          shasum -a 256 $ARCHIVE_FILE > $ARCHIVE_FILE.sha256
+          ARCHIVE_FILE=ompd-windows-x86_64.zip
+          7z a $ARCHIVE_FILE ./target/x86_64-pc-windows-msvc/release/ompd.exe
+          sha256sum $ARCHIVE_FILE > $ARCHIVE_FILE.sha256
       - name: Upload binary
         if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v3
         with:
           name: binaries
           path: |
-            *.tar.gz
+            *.zip
             *.sha256
