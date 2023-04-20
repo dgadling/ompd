@@ -82,7 +82,7 @@ impl Config {
             vid_width: 860,
             vid_height: 360,
             shot_type: "png".to_string(),
-            compress_shots: false,
+            compress_shots: true,
         };
 
         if write_config {
