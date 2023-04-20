@@ -12,6 +12,6 @@ env:
 
 jobs:
   build-lint-format:
-    uses: ./.github/workflows/linux-build.yml@main
+    uses: ./.github/workflows/linux-build.yml
     with:
       upload_artifacts: false
