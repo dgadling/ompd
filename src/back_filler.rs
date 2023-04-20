@@ -6,6 +6,7 @@ use chrono::{DateTime, Datelike, Local};
 use glob::glob;
 use log::{info, warn};
 use std::collections::HashSet;
+use std::fmt;
 use std::path::{Component, Path, PathBuf};
 use std::result::Result;
 
@@ -27,6 +28,12 @@ impl Discovered {
             .join(format!("{}", self.year))
             .join(format!("{:02}", self.month))
             .join(format!("{:02}", self.day))
+    }
+}
+
+impl fmt::Display for Discovered {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}-{:02}-{:02}", self.year, self.month, self.day)
     }
 }
 
@@ -69,7 +76,7 @@ impl BackFiller {
 
         let root_shot_dir = PathBuf::from(&self.config.shot_output_dir);
         for dir in to_process {
-            info!("Launching movie maker for {dir:?}");
+            info!("Launching movie maker for {dir}");
             m.make_movie_from(&dir.to_shot_dir_in(&root_shot_dir));
         }
 
