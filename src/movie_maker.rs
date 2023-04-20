@@ -89,13 +89,16 @@ impl MovieMaker {
 
         if self.compress_when_done {
             info!("Compressing stills");
-            DirManager::compress(input_dir);
+            DirManager::compress(input_dir, self.file_extension.as_str());
         }
         info!("All done with {input_dir:?}!");
     }
 
-    pub fn fix_missing_frames(&self, in_dir: &Path) {
-        let expected_extension = self.file_extension.clone();
+    fn fix_missing_frames(&self, in_dir: &Path) {
+        let expected_extension = self.file_extension.as_str();
+
+        debug!("Going to decompress, first");
+        DirManager::decompress(in_dir);
 
         let mut found_frames = Vec::new();
 
@@ -117,7 +120,7 @@ impl MovieMaker {
                 }
             };
 
-            if extension.to_string_lossy() == expected_extension {
+            if extension == expected_extension {
                 found_frames.push(entry.path());
             }
         }

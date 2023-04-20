@@ -1,9 +1,11 @@
 use chrono::{Datelike, Local};
 use log::{debug, warn};
-use std::fs::{create_dir_all, read_dir};
+use std::fs::{create_dir_all, read_dir, remove_file};
 use std::io::{BufReader, BufWriter};
 use std::path::{Path, PathBuf};
 use zstd::DEFAULT_COMPRESSION_LEVEL;
+
+const COMPRESSED_FILE_EXTENSION: &str = "zst";
 
 pub struct DirManager {
     current_shot_dir: PathBuf,
@@ -39,7 +41,21 @@ impl DirManager {
         self.current_shot_dir.clone()
     }
 
-    pub fn compress(target: &Path) {
+    pub fn decompress(target: &Path) {
+        debug!("Going to iterate_and_operate({target:?}, {COMPRESSED_FILE_EXTENSION}, Self::actually_decompress)");
+
+        Self::iterate_and_operate(target, COMPRESSED_FILE_EXTENSION, Self::actually_decompress)
+    }
+
+    pub fn compress(target: &Path, target_extension: &str) {
+        Self::iterate_and_operate(target, target_extension, Self::actually_compress)
+    }
+
+    fn iterate_and_operate(
+        target: &Path,
+        target_extension: &str,
+        op: fn(&Path) -> Result<(), anyhow::Error>,
+    ) {
         for entry_maybe in read_dir(target).unwrap() {
             let entry = match entry_maybe {
                 Ok(e) => e,
@@ -50,7 +66,6 @@ impl DirManager {
             };
 
             if entry.file_type().unwrap().is_symlink() {
-                debug!("Found a link {entry:?}, skipping!");
                 continue;
             }
 
@@ -64,34 +79,56 @@ impl DirManager {
                 }
             };
 
-            if extension != "png" {
-                debug!("Found non-png {entry:?}, skip!");
+            if extension != target_extension {
                 continue;
             }
 
-            let compressed = Self::actually_compress(entry_path.as_path());
-            match compressed {
-                Err(e) => {
-                    warn!("Some issue with {entry:?}: {e:?}");
-                }
-                Ok(_) => {
-                    debug!("Compressed!");
-                }
-            }
+            let done = op(entry_path.as_path());
+            if let Err(e) = done {
+                warn!("Some issue with {entry:?}: {e:?}");
+            };
         }
     }
 
     fn actually_compress(entry: &Path) -> Result<(), anyhow::Error> {
         let mut new_file_name = entry.as_os_str().to_owned();
-        new_file_name.push(".zst");
+        new_file_name.push(".");
+        new_file_name.push(COMPRESSED_FILE_EXTENSION);
 
-        let orig_file = std::fs::File::open(entry)?;
-        let reader = BufReader::new(&orig_file);
+        {
+            let orig_file = std::fs::File::open(entry)?;
+            let reader = BufReader::new(&orig_file);
 
-        let compressed_file = std::fs::File::create(&new_file_name)?;
-        let writer = BufWriter::new(&compressed_file);
+            let compressed_file = std::fs::File::create(&new_file_name)?;
+            let writer = BufWriter::new(&compressed_file);
 
-        zstd::stream::copy_encode(reader, writer, DEFAULT_COMPRESSION_LEVEL)?;
+            zstd::stream::copy_encode(reader, writer, DEFAULT_COMPRESSION_LEVEL)?;
+        }
+
+        remove_file(entry)?;
+
+        Ok(())
+    }
+
+    fn actually_decompress(entry: &Path) -> Result<(), anyhow::Error> {
+        let new_file_name = entry
+            .as_os_str()
+            .to_os_string()
+            .into_string()
+            .unwrap()
+            .replace(COMPRESSED_FILE_EXTENSION, "");
+
+        {
+            let orig_file = std::fs::File::open(entry)?;
+            let reader = BufReader::new(&orig_file);
+
+            let compressed_file = std::fs::File::create(new_file_name)?;
+            let writer = BufWriter::new(&compressed_file);
+
+            zstd::stream::copy_decode(reader, writer)?;
+        }
+
+        remove_file(entry)?;
 
         Ok(())
     }
