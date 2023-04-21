@@ -18,10 +18,7 @@ on:
       # can be removed.
       - synchronize
 
-permissions:
-  issues: write
-  pull-requests: write
-  statuses: write
+permissions: write-all
 
 jobs:
   check:
