@@ -18,8 +18,11 @@ on:
       # can be removed.
       - synchronize
 
-permissions: write-all
-
+permissions:
+  issues: write
+  pull-requests: write
+  statuses: write
+  
 jobs:
   check:
     runs-on: ubuntu-latest
