@@ -33,7 +33,7 @@ jobs:
 
   release:
     name: Release
-    runs-on: ubunut-latest
+    runs-on: ubuntu-latest
     needs:
       - mac
       - linux
