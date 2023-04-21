@@ -28,6 +28,7 @@ pub struct Capturer {
     screen: Screen,
     sleep_interval: std::time::Duration,
     curr_frame: u32,
+    shot_type: String,
 }
 
 pub enum ChangeType {
@@ -36,11 +37,12 @@ pub enum ChangeType {
 }
 
 impl Capturer {
-    pub fn new(sleep_interval: &std::time::Duration) -> Capturer {
+    pub fn new(sleep_interval: &std::time::Duration, shot_type: &str) -> Capturer {
         Capturer {
             screen: Screen::all().unwrap().first().unwrap().to_owned(),
             sleep_interval: sleep_interval.to_owned(),
             curr_frame: 0,
+            shot_type: shot_type.to_string(),
         }
     }
 
@@ -83,14 +85,15 @@ impl Capturer {
     }
 
     pub fn store(&mut self, capture_result: Image, dir: &Path) {
-        let filename = format!("{:05}.png", self.curr_frame);
+        let filename = format!("{:05}.{}", self.curr_frame, self.shot_type);
         let filepath = dir.join(filename);
 
         assert!(!filepath.exists(), "I'm trying to overwrite myself!");
 
         let capture = capture_result;
         debug!("Writing out a file to {filepath:?}");
-        fs::write(&filepath, capture.buffer()).expect("Failed to write PNG data to file");
+        fs::write(&filepath, capture.buffer())
+            .unwrap_or_else(|_| panic!("Failed to write {} data to file", self.shot_type));
         self.curr_frame += 1;
     }
 
@@ -103,7 +106,7 @@ impl Capturer {
 
         let filler_frame_path = dir_manager
             .current_shot_dir()
-            .join(format!("{:05}.png", self.curr_frame));
+            .join(format!("{:05}.{}", self.curr_frame, self.shot_type));
 
         info!("Creating filler frame @ {filler_frame_path:?}");
         Self::create_filler_frame(elapsed_secs, 860, 360)
@@ -115,9 +118,11 @@ impl Capturer {
         for n in 1..missed_frames {
             symlink_file(
                 &filler_frame_path,
-                dir_manager
-                    .current_shot_dir()
-                    .join(format!("{:05}.png", self.curr_frame + n)),
+                dir_manager.current_shot_dir().join(format!(
+                    "{:05}.{}",
+                    self.curr_frame + n,
+                    self.shot_type
+                )),
             )?;
         }
 
@@ -133,12 +138,12 @@ impl Capturer {
         let mut count: FrameCounter = 0;
         for entry in std::fs::read_dir(dir)? {
             let entry = entry?;
-            if entry.path().extension().unwrap() != "png" {
+            if entry.path().extension().unwrap().to_str().unwrap() != self.shot_type {
                 continue;
             }
             count += 1;
         }
-        debug!("Found {count:?} existing PNGs");
+        debug!("Found {count:?} existing {}s", self.shot_type);
         Ok(count)
     }
 

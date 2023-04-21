@@ -16,7 +16,7 @@ use std::thread;
 pub fn run(config: Config) {
     let sleep_interval = std::time::Duration::from_secs(config.interval);
     let mut d = DirManager::new(&config.shot_output_dir, &config.vid_output_dir);
-    let mut c = Capturer::new(&sleep_interval);
+    let mut c = Capturer::new(&sleep_interval, &config.shot_type);
 
     let starting_time = Local::now();
     let mut last_time = starting_time;
