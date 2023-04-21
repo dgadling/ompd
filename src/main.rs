@@ -21,8 +21,14 @@ fn main() {
     })
     .expect("Couldn't set a clean exit handler!");
 
+    let level_filter = if cfg!(debug_assertions) {
+        LevelFilter::max()
+    } else {
+        LevelFilter::Info
+    };
+
     Builder::new()
-        .filter_level(LevelFilter::max())
+        .filter_level(level_filter)
         .filter_module("wmi", LevelFilter::Error)
         .init();
 
