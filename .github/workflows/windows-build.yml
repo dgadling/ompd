@@ -32,7 +32,7 @@ jobs:
         shell: bash
         run: |
           ARCHIVE_FILE=ompd-windows-x86_64.zip
-          7z a $ARCHIVE_FILE ./target/x86_64-pc-windows-msvc/release/ompd.exe
+          7z a $ARCHIVE_FILE ./target/release/ompd.exe
           sha256sum $ARCHIVE_FILE > $ARCHIVE_FILE.sha256
       - name: Upload binary
         if: ${{ inputs.upload_artifacts }}

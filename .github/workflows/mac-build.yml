@@ -31,7 +31,7 @@ jobs:
         if: ${{ inputs.upload_artifacts }}
         run: |
           ARCHIVE_FILE=ompd-linux-x86_64.tar.gz
-          tar czvf $ARCHIVE_FILE -C target/x86_64-apple-darwin/release ompd
+          tar czvf $ARCHIVE_FILE -C target/release ompd
           shasum -a 256 $ARCHIVE_FILE > $ARCHIVE_FILE.sha256
       - name: Upload binary
         if: ${{ inputs.upload_artifacts }}
