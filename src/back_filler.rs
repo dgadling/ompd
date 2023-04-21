@@ -86,8 +86,10 @@ impl BackFiller {
     fn discover_vids(&self) -> Result<HashSet<Discovered>, Error> {
         let mut discovered = HashSet::new();
 
-        let video_glob = PathBuf::from(&self.config.vid_output_dir)
-            .join("ompd-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].mkv");
+        let video_glob = PathBuf::from(&self.config.vid_output_dir).join(format!(
+            "ompd-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].{}",
+            self.config.video_type
+        ));
         let ok_matches = glob(video_glob.to_str().unwrap())
             .unwrap()
             .filter_map(Result::ok);

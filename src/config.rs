@@ -5,6 +5,8 @@ use std::fs::create_dir_all;
 use std::fs::File;
 use which::which;
 
+use crate::movie_maker::MovieMaker;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
     pub interval: u64,
@@ -17,6 +19,7 @@ pub struct Config {
     pub vid_height: u32,
     pub shot_type: String,
     pub compress_shots: bool,
+    pub video_type: String,
 }
 
 impl Config {
@@ -39,6 +42,12 @@ impl Config {
                     config.max_sleep_secs > 0,
                     "max_sleep_secs must be greater than zero. No sleeping backwards!"
                 );
+
+                let mux_check = MovieMaker::has_muxer(&config.ffmpeg, &config.video_type);
+                if let Err(e) = mux_check {
+                    error!("{}", e);
+                    panic!("{}", e);
+                }
 
                 return config;
             } else {
@@ -83,6 +92,7 @@ impl Config {
             vid_height: 360,
             shot_type: "png".to_string(),
             compress_shots: true,
+            video_type: "mp4".to_string(),
         };
 
         if write_config {

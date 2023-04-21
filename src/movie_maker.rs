@@ -1,5 +1,6 @@
 use crate::Config;
 use crate::DirManager;
+use anyhow::Error;
 use log::error;
 use log::{debug, info, warn};
 use std::fs;
@@ -14,6 +15,7 @@ pub struct MovieMaker {
     output_height: u32,
     ffmpeg: String,
     compress_when_done: bool,
+    output_type: String
 }
 
 impl MovieMaker {
@@ -26,9 +28,39 @@ impl MovieMaker {
             output_height: config.vid_height,
             ffmpeg: config.ffmpeg,
             compress_when_done: config.compress_shots,
+            output_type: config.video_type,
         }
     }
 
+    pub fn has_muxer(ffmpeg: &str, extension: &str) -> Result<bool, Error> {
+        debug!(
+            "Asking {} if it knows how to mux {} files",
+            ffmpeg, extension
+        );
+
+        let mut to_run = Command::new(ffmpeg);
+        to_run.args(["-muxers"]);
+
+        let output = to_run.output()?;
+        debug!("Finished with: {:?}", output.status);
+
+        let stdout_raw = String::from_utf8(output.stdout).unwrap();
+        let stdout = stdout_raw.lines().collect::<Vec<_>>();
+
+        let needle = format!("E {extension}");
+        for line in &stdout {
+            match line.find(&needle) {
+                Some(_) => return Ok(true),
+                None => {
+                    continue;
+                }
+            }
+        }
+
+        Err(anyhow::anyhow!(
+            "Invalid video type, ffmpeg doesn't know how to make '{extension}' files"
+        ))
+    }
     pub fn make_movie_from(&self, input_dir: &Path) {
         self.fix_missing_frames(input_dir);
 
@@ -55,7 +87,7 @@ impl MovieMaker {
             .to_str()
             .unwrap();
 
-        let out_f = format!("ompd-{}-{}-{}.mkv", year, month, day);
+        let out_f = format!("ompd-{}-{}-{}.{}", year, month, day, &self.output_type);
 
         let mut to_run = Command::new(&self.ffmpeg);
         to_run.args([
