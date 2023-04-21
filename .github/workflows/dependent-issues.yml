@@ -18,6 +18,9 @@ on:
       # can be removed.
       - synchronize
 
+permissions:
+  contents: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
