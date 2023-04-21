@@ -15,7 +15,7 @@ pub struct MovieMaker {
     output_height: u32,
     ffmpeg: String,
     compress_when_done: bool,
-    output_type: String
+    output_type: String,
 }
 
 impl MovieMaker {
