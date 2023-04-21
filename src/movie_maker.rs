@@ -1,5 +1,6 @@
 use crate::Config;
 use crate::DirManager;
+use log::error;
 use log::{debug, info, warn};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -84,7 +85,20 @@ impl MovieMaker {
         debug!("Finished with: {:?}", output.status);
 
         if !output.status.success() {
-            panic!("Some issue running ffmpeg! Abort abort abort!");
+            let stderr_raw = String::from_utf8(output.stderr).unwrap();
+            let stderr = stderr_raw.lines().collect::<Vec<_>>();
+            let err = format!(
+                "Issue with ffmpeg - last line of stderr: {}",
+                stderr.last().unwrap()
+            );
+            error!("{}", &err);
+
+            debug!("STDERR says:");
+            for line in &stderr {
+                debug!("  {}", line);
+            }
+
+            panic!("{}", &err);
         }
 
         if self.compress_when_done {
