@@ -90,7 +90,7 @@ impl Config {
             handle_old_dirs_on_startup: true,
             vid_width: 860,
             vid_height: 360,
-            shot_type: "png".to_string(),
+            shot_type: "jpg".to_string(),
             compress_shots: true,
             video_type: "mp4".to_string(),
         };
