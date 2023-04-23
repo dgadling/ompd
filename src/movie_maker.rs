@@ -61,6 +61,7 @@ impl MovieMaker {
             "Invalid video type, ffmpeg doesn't know how to make '{extension}' files"
         ))
     }
+
     pub fn make_movie_from(&self, input_dir: &Path) {
         self.fix_missing_frames(input_dir);
 
@@ -116,20 +117,26 @@ impl MovieMaker {
         let output = to_run.output().expect("Failed to run ffmpeg :(");
         debug!("Finished with: {:?}", output.status);
 
+        let stdout_raw = String::from_utf8(output.stdout).unwrap();
+        let stderr_raw = String::from_utf8(output.stderr).unwrap();
+        let stdout = stdout_raw.lines().collect::<Vec<_>>();
+        let stderr = stderr_raw.lines().collect::<Vec<_>>();
+
+        // Log ffmpeg output no matter what
+        if let Err(e) = fs::write(input_dir.join("ffmpeg-stdout.log"), stdout.join("\n")) {
+            warn!("Couldn't write ffmpeg stdout to file: {e}");
+        }
+
+        if let Err(e) = fs::write(input_dir.join("ffmpeg-stderr.log"), stderr.join("\n")) {
+            warn!("Couldn't write ffmpeg stderr to file: {e}");
+        }
+
         if !output.status.success() {
-            let stderr_raw = String::from_utf8(output.stderr).unwrap();
-            let stderr = stderr_raw.lines().collect::<Vec<_>>();
             let err = format!(
                 "Issue with ffmpeg - last line of stderr: {}",
                 stderr.last().unwrap()
             );
             error!("{}", &err);
-
-            debug!("STDERR says:");
-            for line in &stderr {
-                debug!("  {}", line);
-            }
-
             panic!("{}", &err);
         }
 
