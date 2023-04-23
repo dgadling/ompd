@@ -6,11 +6,12 @@ mod not_windows;
 
 use anyhow::Error;
 use chrono::{DateTime, Datelike, Local};
+use image::io::Reader;
 use image::{ImageBuffer, Rgba};
 use log::{debug, error, info};
 use rusttype::{Font, Scale};
-use screenshots::{Image, Screen};
-use std::fs;
+use screenshots::Screen;
+use std::io::Cursor;
 use std::path::Path;
 use symlink::symlink_file;
 
@@ -80,20 +81,32 @@ impl Capturer {
         self.curr_frame = new_curr_frame;
     }
 
-    pub fn capture_screen(&self) -> Result<Image, anyhow::Error> {
+    pub fn capture_screen(&self) -> Result<screenshots::Image, anyhow::Error> {
         get_screenshot(self.screen)
     }
 
-    pub fn store(&mut self, capture_result: Image, dir: &Path) {
+    pub fn store(&mut self, capture_result: screenshots::Image, dir: &Path) {
+        debug!("Going to store a screenshots::Image");
         let filename = format!("{:05}.{}", self.curr_frame, self.shot_type);
         let filepath = dir.join(filename);
 
         assert!(!filepath.exists(), "I'm trying to overwrite myself!");
 
-        let capture = capture_result;
+        // We know that the screenshots::Image is a PNG, that's hard-coded.
+        // So, it's safe to decode it as such.
+        let image_reader = Reader::with_format(
+            Cursor::new(capture_result.buffer()),
+            image::ImageFormat::Png,
+        );
+        debug!("Made a reader");
+
+        let new_img = image_reader
+            .decode()
+            .expect("decoding shouldn't be able to fail at this point!");
+        debug!("Done decoding it");
+
         debug!("Writing out a file to {filepath:?}");
-        fs::write(&filepath, capture.buffer())
-            .unwrap_or_else(|_| panic!("Failed to write {} data to file", self.shot_type));
+        new_img.save(&filepath).expect("Couldn't save screenshot!");
         self.curr_frame += 1;
     }
 
