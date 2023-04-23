@@ -43,6 +43,12 @@ impl Config {
                     "max_sleep_secs must be greater than zero. No sleeping backwards!"
                 );
 
+                // TODO: Remove once #10 is fixed
+                assert!(
+                    config.shot_type == "png",
+                    "Can't have non-PNG shot types until #10 is fixed. Sorry."
+                );
+
                 let mux_check = MovieMaker::has_muxer(&config.ffmpeg, &config.video_type);
                 if let Err(e) = mux_check {
                     error!("{}", e);
@@ -90,7 +96,8 @@ impl Config {
             handle_old_dirs_on_startup: true,
             vid_width: 860,
             vid_height: 360,
-            shot_type: "jpg".to_string(),
+            // TODO: Once #10 is fixed this can go back to being JPG by default
+            shot_type: "png".to_string(),
             compress_shots: true,
             video_type: "mp4".to_string(),
         };
