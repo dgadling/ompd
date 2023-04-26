@@ -151,6 +151,11 @@ impl Capturer {
         let mut count: FrameCounter = 0;
         for entry in std::fs::read_dir(dir)? {
             let entry = entry?;
+            if entry.path().extension().is_none() {
+                debug!("Found something strange at {entry:?}");
+                continue;
+            }
+
             if entry.path().extension().unwrap().to_str().unwrap() != self.shot_type {
                 continue;
             }
