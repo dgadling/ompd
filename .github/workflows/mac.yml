@@ -2,6 +2,8 @@ name: Build Mac (x86_64)
 on:
   push:
     branches: [ "master" ]
+    paths:
+      - src/**
   pull_request:
     branches: [ "master" ]
   schedule:
