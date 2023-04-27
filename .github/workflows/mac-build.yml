@@ -16,8 +16,8 @@ jobs:
   mac:
     runs-on: macos-latest
     steps:
+      - uses: actions/checkout@v3
       - name: Set up Rust
-        uses: actions/checkout@v3
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt, clippy
