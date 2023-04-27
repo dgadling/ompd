@@ -3,7 +3,6 @@ use home::home_dir;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::fs::create_dir_all;
 use std::fs::File;
 use which::which;
 
@@ -28,9 +27,7 @@ impl Config {
     pub fn get_config() -> Config {
         let home = home_dir().expect("Couldn't figure out our home directory?!");
 
-        create_dir_all(home.join("ompd")).expect("Couldn't create our own directory?!");
-
-        let config_path = home.join("ompd").join("config.json");
+        let config_path = home.join(".ompd-config.json");
         let mut write_config = true;
 
         if config_path.exists() {
