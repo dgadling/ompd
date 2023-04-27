@@ -23,16 +23,19 @@ jobs:
     uses: ./.github/workflows/mac-build.yml
     with:
       upload_artifacts: true
+      version: ${{ github.ref }}
 
   linux:
     uses: ./.github/workflows/linux-build.yml
     with:
       upload_artifacts: true
+      version: ${{ github.ref }}
 
   windows:
     uses: ./.github/workflows/windows-build.yml
     with:
       upload_artifacts: true
+      version: ${{ github.ref }}
 
   release:
     name: Release

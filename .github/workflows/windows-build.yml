@@ -5,6 +5,9 @@ on:
       upload_artifacts:
         required: true
         type: boolean
+      version:
+        required: false
+        type: string
 
 env:
   CARGO_TERM_COLOR: always
@@ -13,27 +16,33 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
       - name: Set up Rust
+        uses: actions/checkout@v3
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt, clippy
+
       - name: Check format
         run: cargo fmt -- --check
+
       - name: Build (dbg)
         run: cargo build --verbose
+
       - name: Lint
         run: cargo clippy -- -D warnings
+
       - name: Build (release)
         if: ${{ inputs.upload_artifacts }}
         run: cargo build --verbose --release
+
       - name: Archive binary
         if: ${{ inputs.upload_artifacts }}
         shell: bash
         run: |
-          ARCHIVE_FILE=ompd-windows-x86_64.zip
+          ARCHIVE_FILE=ompd-${{ inputs.version }}-windows-x86_64.zip
           7z a $ARCHIVE_FILE ./target/release/ompd.exe
           sha256sum $ARCHIVE_FILE > $ARCHIVE_FILE.sha256
+
       - name: Upload binary
         if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v3
