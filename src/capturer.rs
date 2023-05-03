@@ -26,7 +26,6 @@ use crate::dir_manager::DirManager;
 pub type FrameCounter = u32;
 
 pub struct Capturer {
-    screen: Screen,
     sleep_interval: std::time::Duration,
     curr_frame: u32,
     shot_type: String,
@@ -40,7 +39,6 @@ pub enum ChangeType {
 impl Capturer {
     pub fn new(sleep_interval: &std::time::Duration, shot_type: &str) -> Capturer {
         Capturer {
-            screen: Screen::all().unwrap().first().unwrap().to_owned(),
             sleep_interval: sleep_interval.to_owned(),
             curr_frame: 0,
             shot_type: shot_type.to_string(),
@@ -82,7 +80,10 @@ impl Capturer {
     }
 
     pub fn capture_screen(&self) -> Result<screenshots::Image, anyhow::Error> {
-        get_screenshot(self.screen)
+        // At any given point we may not have the same primary screen as we
+        // did. For example, we may have switched from an external display to a
+        // laptop primary display. So, reacquire the screen with (0, 0) every time.
+        get_screenshot(Screen::from_point(0, 0).expect("Couldn't get screen at origin?!"))
     }
 
     pub fn store(&mut self, capture_result: screenshots::Image, dir: &Path) {
