@@ -38,7 +38,7 @@ impl MovieMaker {
         let output = Command::new(ffmpeg)
             .arg("-muxers")
             .output()
-            .expect(&format!("Couldn't ask {} for muxers!", ffmpeg));
+            .unwrap_or_else(|_| panic!("Couldn't ask {} for muxers!", ffmpeg));
 
         let stdout_raw = String::from_utf8(output.stdout).unwrap();
         let stdout = stdout_raw.lines().collect::<Vec<_>>();
