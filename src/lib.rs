@@ -63,43 +63,43 @@ pub fn run(config: Config) {
             // At this point we know we went *forward* in time since max_sleep_secs can only be
             // positive.
             let change_result = c.deal_with_change(&d, &last_time, &now);
-            match change_result {
-                Err(e) => {
-                    error!("Some issue dealing with a decent time gap: {e:?}");
-                    info!("Going to sleep and try again");
-                    thread::sleep(sleep_interval);
-                    continue;
-                }
-                Ok(capturer::ChangeType::NewDay) => {
-                    info!("Brand new day! Let's goooooo");
-
-                    let shot_dir = d.get_current_shot_dir();
-                    let moviemaker_maybe =
-                        thread::Builder::new()
-                            .name("moviemaker".into())
-                            .spawn(move || {
-                                // TODO: Fire up a resizer before doing the movie making, compress when done.
-                                info!("Launching movie maker");
-                                // NOTE: Get a fresh copy of the config in case something
-                                // has changed since we started.
-                                let m = MovieMaker::new(Config::get_config());
-                                m.make_movie_from(shot_dir.as_path());
-                            });
-
-                    if let Err(e) = moviemaker_maybe {
-                        warn!("Couldn't spawn movie maker thread! {e:?}");
-                    }
-
-                    // Get ready for today to make sure we have the right path to make movies in.
-                    let made_output_dir = d.make_shot_output_dir();
-                    if let Err(e) = made_output_dir {
-                        error!("Couldn't make new output directory?!: {e:?}");
-                        break;
-                    }
-                    c.set_current_frame(0);
-                }
-                Ok(capturer::ChangeType::Nop) => {}
+            if let Err(e) = change_result {
+                error!("Some issue dealing with a decent time gap: {e:?}");
+                info!("Going to sleep and try again");
+                thread::sleep(sleep_interval);
+                continue;
             }
+
+            if let Ok(capturer::ChangeType::NewDay) = change_result {
+                info!("Brand new day! Let's goooooo");
+
+                let shot_dir = d.get_current_shot_dir();
+                let moviemaker_maybe =
+                    thread::Builder::new()
+                        .name("moviemaker".into())
+                        .spawn(move || {
+                            // TODO: Fire up a resizer before doing the movie making, compress when done.
+                            info!("Launching movie maker");
+                            // NOTE: Get a fresh copy of the config in case something
+                            // has changed since we started.
+                            let m = MovieMaker::new(Config::get_config());
+                            m.make_movie_from(shot_dir.as_path());
+                        });
+
+                if let Err(e) = moviemaker_maybe {
+                    warn!("Couldn't spawn movie maker thread! {e:?}");
+                }
+
+                // Get ready for today to make sure we have the right path to make movies in.
+                let made_output_dir = d.make_shot_output_dir();
+                if let Err(e) = made_output_dir {
+                    error!("Couldn't make new output directory?!: {e:?}");
+                    break;
+                }
+                c.set_current_frame(0);
+            }
+
+            // The only other type is Nop and ... that's a Nop
         }
 
         c.store(capture_result.unwrap(), d.current_shot_dir());
