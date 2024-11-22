@@ -74,14 +74,15 @@ pub fn run(config: Config) {
                     info!("Brand new day! Let's goooooo");
 
                     let shot_dir = d.get_current_shot_dir();
-                    let config_to_move = config.clone();
                     let moviemaker_maybe =
                         thread::Builder::new()
                             .name("moviemaker".into())
                             .spawn(move || {
                                 // TODO: Fire up a resizer before doing the movie making, compress when done.
                                 info!("Launching movie maker");
-                                let m = MovieMaker::new(config_to_move);
+                                // NOTE: Get a fresh copy of the config in case something
+                                // has changed since we started.
+                                let m = MovieMaker::new(Config::get_config());
                                 m.make_movie_from(shot_dir.as_path());
                             });
 
