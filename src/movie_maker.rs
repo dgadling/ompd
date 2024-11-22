@@ -33,21 +33,17 @@ impl MovieMaker {
     }
 
     pub fn has_muxer(ffmpeg: &str, extension: &str) -> Result<bool, Error> {
-        debug!(
-            "Asking {} if it knows how to mux {} files",
-            ffmpeg, extension
-        );
+        debug!("Asking {} for its muxers", ffmpeg);
 
-        let mut to_run = Command::new(ffmpeg);
-        to_run.args(["-muxers"]);
-
-        let output = to_run.output()?;
-        debug!("Finished with: {:?}", output.status);
+        let output = Command::new(ffmpeg)
+            .arg("-muxers")
+            .output()
+            .expect(&format!("Couldn't ask {} for muxers!", ffmpeg));
 
         let stdout_raw = String::from_utf8(output.stdout).unwrap();
         let stdout = stdout_raw.lines().collect::<Vec<_>>();
 
-        let needle = format!("E {extension}");
+        let needle = format!("E  {extension}");
         for line in &stdout {
             match line.find(&needle) {
                 Some(_) => return Ok(true),
