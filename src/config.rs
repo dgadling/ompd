@@ -53,6 +53,12 @@ impl Config {
                     );
                 }
 
+                if !std::path::Path::new(&config.ffmpeg).is_file() {
+                    let e = format!("Our 'ffmpeg' ({}) isn't a file!", &config.ffmpeg);
+                    error!("{}", e);
+                    panic!("{}", e);
+                }
+
                 let mux_check = MovieMaker::has_muxer(&config.ffmpeg, &config.video_type);
                 if let Err(e) = mux_check {
                     error!("{}", e);
