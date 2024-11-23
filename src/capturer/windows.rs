@@ -36,7 +36,7 @@ pub fn get_screenshot(screen: Screen) -> Result<Image, Error> {
     if !logons.is_empty() {
         return Err(anyhow!(
             "Lock screen is active (pid = {:?}), do not want.",
-            logons.get(0).unwrap().process_id
+            logons.first().unwrap().process_id
         ));
     }
 
