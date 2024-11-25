@@ -1,4 +1,4 @@
-name: Build Mac (x86_64)
+name: Build Mac (aarch64)
 on:
   workflow_call:
     inputs:
@@ -38,7 +38,7 @@ jobs:
       - name: Archive binary
         if: ${{ inputs.upload_artifacts }}
         run: |
-          ARCHIVE_FILE=ompd-${{ inputs.version }}-mac-x86_64.tar.gz
+          ARCHIVE_FILE=ompd-${{ inputs.version }}-mac-aarch64.tar.gz
           tar czvf $ARCHIVE_FILE -C target/release ompd
           shasum -a 256 $ARCHIVE_FILE > $ARCHIVE_FILE.sha256
 
