@@ -28,7 +28,7 @@ jobs:
       - name: Prep container
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y libdbus-1-dev dbus libxcb1-dev libxcb
+          sudo apt-get install --no-install-recommends -y libdbus-1-dev dbus libxcb1-dev
 
       - name: Build (dbg)
         run: cargo build --verbose
