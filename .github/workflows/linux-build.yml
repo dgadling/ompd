@@ -51,7 +51,7 @@ jobs:
         if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
+          name: linux-binaries
           path: |
             *.tar.gz
             *.sha256

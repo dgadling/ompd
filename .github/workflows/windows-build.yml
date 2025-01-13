@@ -47,7 +47,7 @@ jobs:
         if: ${{ inputs.upload_artifacts }}
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
+          name: windows-binaries
           path: |
             *.zip
             *.sha256
