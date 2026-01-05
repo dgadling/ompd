@@ -16,21 +16,48 @@ pub struct Config {
     pub vid_output_dir: String,
     pub ffmpeg: String,
     pub handle_old_dirs_on_startup: bool,
-    pub vid_width: u32,
-    pub vid_height: u32,
     pub shot_type: String,
     pub compress_shots: bool,
     pub video_type: String,
     /// Scale factor for video output dimensions (must be positive)
-    #[serde(default = "default_vid_scale_factor")]
     pub vid_scale_factor: f32,
 }
 
-fn default_vid_scale_factor() -> f32 {
-    1.0
-}
-
 impl Config {
+    /// Validate config values. Panics if any value is invalid.
+    #[cfg(test)]
+    fn validate(&self) {
+        assert!(
+            self.vid_scale_factor > 0.0,
+            "vid_scale_factor must be positive"
+        );
+    }
+
+    /// Create a Config suitable for testing with sensible defaults.
+    /// Uses temp directories and scale_factor of 1.0.
+    #[cfg(test)]
+    pub fn for_testing() -> Config {
+        let temp_dir = std::env::temp_dir();
+        Config {
+            interval: 20,
+            max_sleep_secs: 180,
+            shot_output_dir: temp_dir
+                .join("ompd_test_shots")
+                .to_string_lossy()
+                .into_owned(),
+            vid_output_dir: temp_dir
+                .join("ompd_test_vids")
+                .to_string_lossy()
+                .into_owned(),
+            ffmpeg: "ffmpeg".to_string(),
+            handle_old_dirs_on_startup: false,
+            shot_type: "jpeg".to_string(),
+            compress_shots: false,
+            video_type: "mp4".to_string(),
+            vid_scale_factor: 1.0,
+        }
+    }
+
     pub fn get_config() -> Config {
         let home = home_dir().expect("Couldn't figure out our home directory?!");
 
@@ -76,7 +103,6 @@ impl Config {
                     config.vid_scale_factor > 0.0,
                     "vid_scale_factor must be positive"
                 );
-
                 return config;
             } else {
                 warn!("{config_path:?} isn't a file. Going to use default config and NOT save it.");
@@ -96,7 +122,7 @@ impl Config {
                 warn!("Couldn't find a path to ffmpeg, making one up! You should update {config_path:?}");
                 "FIND SOMETHING TO PUT HERE".to_string()
             }
-            Ok(p) => p.to_str().unwrap().to_string(),
+            Ok(p) => p.to_string_lossy().into_owned(),
         };
 
         let new_config = Config {
@@ -105,19 +131,15 @@ impl Config {
             shot_output_dir: home
                 .join("ompd")
                 .join("shots")
-                .into_os_string()
-                .into_string()
-                .unwrap(),
+                .to_string_lossy()
+                .into_owned(),
             vid_output_dir: home
                 .join("ompd")
                 .join("videos")
-                .into_os_string()
-                .into_string()
-                .unwrap(),
+                .to_string_lossy()
+                .into_owned(),
             ffmpeg: ffmpeg_path,
             handle_old_dirs_on_startup: true,
-            vid_width: 860,
-            vid_height: 360,
             shot_type: "jpeg".to_string(),
             compress_shots: true,
             video_type: "mp4".to_string(),
@@ -135,5 +157,35 @@ impl Config {
         }
 
         new_config
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_vid_scale_factor_default() {
+        let config = Config::for_testing();
+        assert_eq!(
+            config.vid_scale_factor, 1.0,
+            "vid_scale_factor should default to 1.0"
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "vid_scale_factor must be positive")]
+    fn test_vid_scale_factor_zero_is_invalid() {
+        let mut config = Config::for_testing();
+        config.vid_scale_factor = 0.0;
+        config.validate();
+    }
+
+    #[test]
+    #[should_panic(expected = "vid_scale_factor must be positive")]
+    fn test_vid_scale_factor_negative_is_invalid() {
+        let mut config = Config::for_testing();
+        config.vid_scale_factor = -0.5;
+        config.validate();
     }
 }
