@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::dir_manager::DirManager;
 use crate::movie_maker::MovieMaker;
 
 use anyhow::Error;
@@ -7,7 +8,7 @@ use glob::glob;
 use log::{info, warn};
 use std::collections::HashSet;
 use std::fmt;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::result::Result;
 
 pub struct BackFiller {
@@ -24,10 +25,7 @@ struct Discovered {
 
 impl Discovered {
     fn to_shot_dir_in(&self, root_dir: &Path) -> PathBuf {
-        root_dir
-            .join(format!("{}", self.year))
-            .join(format!("{:02}", self.month))
-            .join(format!("{:02}", self.day))
+        DirManager::shot_dir_for_date(root_dir, self.year, self.month, self.day)
     }
 }
 
@@ -39,7 +37,6 @@ impl fmt::Display for Discovered {
 
 impl BackFiller {
     pub fn new(config: Config, today: DateTime<Local>) -> BackFiller {
-        //shots_root_dir: &Path, vids_root_dir: &Path, ffmpeg: &str, vid_width: u32, vid_height: u32) -> BackFiller {
         BackFiller {
             config,
             today: Discovered {
@@ -76,8 +73,23 @@ impl BackFiller {
 
         let root_shot_dir = PathBuf::from(&self.config.shot_output_dir);
         for dir in to_process {
+            let shot_dir = dir.to_shot_dir_in(&root_shot_dir);
             info!("Launching movie maker for {dir}");
-            m.make_movie_from(&dir.to_shot_dir_in(&root_shot_dir));
+
+            // Generate metadata for old directories that may not have it
+            let metadata_csv = shot_dir.join("frame_metadata.csv");
+            if !metadata_csv.exists() {
+                DirManager::decompress(&shot_dir);
+                info!("Generating missing metadata for {}", shot_dir.display());
+                if let Err(e) = DirManager::generate_metadata(&shot_dir, &self.config.shot_type) {
+                    warn!(
+                        "Failed to generate metadata for {}: {e}",
+                        shot_dir.display()
+                    );
+                }
+            }
+
+            m.make_movie_from(&shot_dir);
         }
 
         info!("Done backfilling movies");
@@ -132,18 +144,9 @@ impl BackFiller {
                 continue;
             }
 
-            // NOTE: We reverse the path to make life easier since Rust doesn't like negative indexing.
-            let dir_parts: Vec<Component> = entry.components().rev().collect();
-
-            let day = dir_parts[0].as_os_str().to_str().unwrap();
-            let month = dir_parts[1].as_os_str().to_str().unwrap();
-            let year = dir_parts[2].as_os_str().to_str().unwrap();
-
-            discovered.insert(Discovered {
-                year: year.parse::<u16>().unwrap(),
-                month: month.parse::<u8>().unwrap(),
-                day: day.parse::<u8>().unwrap(),
-            });
+            if let Some((year, month, day)) = DirManager::parse_date_from_shot_dir(&entry) {
+                discovered.insert(Discovered { year, month, day });
+            }
         }
 
         Ok(discovered)

@@ -1,13 +1,33 @@
-mod back_filler;
+pub mod back_filler;
 use back_filler::BackFiller;
 mod capturer;
 pub mod config;
-mod dir_manager;
+pub mod dir_manager;
 pub mod movie_maker;
+
+use serde::{Deserialize, Serialize};
+
+/// Default frame dimensions used as fallback when no metadata is available
+pub const DEFAULT_FRAME_DIMENSIONS: (u32, u32) = (3420, 2224);
+
+/// A single frame's metadata for CSV serialization
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FrameRecord {
+    pub frame: u32,
+    pub width: u32,
+    pub height: u32,
+}
+
+/// Metadata about frame dimensions in a shot directory
+#[derive(Debug, Clone)]
+pub struct FrameMetadata {
+    /// (frame_num, width, height)
+    pub frames: Vec<(u32, u32, u32)>,
+}
 
 use capturer::Capturer;
 use chrono::Local;
-use config::Config;
+pub use config::Config;
 use dir_manager::DirManager;
 use log::{error, info, warn};
 use movie_maker::MovieMaker;
@@ -73,7 +93,7 @@ pub fn run(config: Config) {
             if let Ok(capturer::ChangeType::NewDay) = change_result {
                 info!("Brand new day! Let's goooooo");
 
-                let shot_dir = d.get_current_shot_dir();
+                let shot_dir = d.current_shot_dir().to_path_buf();
                 let moviemaker_maybe =
                     thread::Builder::new()
                         .name("moviemaker".into())
