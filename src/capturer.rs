@@ -236,7 +236,22 @@ impl Capturer {
 
         let font_data = include_bytes!("Ubuntu-Regular.ttf");
         let font = Font::try_from_bytes(font_data as &[u8]).unwrap();
-        let font_size = 80.0;
+
+        // Start with font size as ~20% of height
+        let initial_font_size = height as f32 / 5.0;
+
+        // Measure text width at initial size
+        let initial_scale = Scale::uniform(initial_font_size);
+        let (text_w, _) = imageproc::drawing::text_size(initial_scale, &font, &duration_str);
+
+        // If text is wider than 80% of frame, scale down proportionally
+        let max_text_width = width as f32 * 0.8;
+        let font_size = if text_w as f32 > max_text_width {
+            initial_font_size * (max_text_width / text_w as f32)
+        } else {
+            initial_font_size
+        };
+
         let scale = Scale::uniform(font_size);
         let (text_w, text_h) = imageproc::drawing::text_size(scale, &font, &duration_str);
         let offset_x = (width as f32 / 2.0) - (text_w as f32 / 2.0);
