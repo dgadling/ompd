@@ -21,6 +21,13 @@ pub struct Config {
     pub shot_type: String,
     pub compress_shots: bool,
     pub video_type: String,
+    /// Scale factor for video output dimensions (must be positive)
+    #[serde(default = "default_vid_scale_factor")]
+    pub vid_scale_factor: f32,
+}
+
+fn default_vid_scale_factor() -> f32 {
+    1.0
 }
 
 impl Config {
@@ -64,6 +71,11 @@ impl Config {
                     error!("{}", e);
                     panic!("{}", e);
                 }
+
+                assert!(
+                    config.vid_scale_factor > 0.0,
+                    "vid_scale_factor must be positive"
+                );
 
                 return config;
             } else {
@@ -109,6 +121,7 @@ impl Config {
             shot_type: "jpeg".to_string(),
             compress_shots: true,
             video_type: "mp4".to_string(),
+            vid_scale_factor: 1.0,
         };
 
         if write_config {
