@@ -179,7 +179,7 @@ impl DirManager {
             .filter(|e| !e.file_type().map_or(true, |ft| ft.is_symlink()))
             .collect();
 
-        image_files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+        image_files.sort_by_key(|a| a.file_name());
 
         if image_files.is_empty() {
             return Err(anyhow::anyhow!(
