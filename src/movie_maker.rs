@@ -68,7 +68,10 @@ impl MovieMaker {
         let (year, month, day) = DirManager::parse_date_from_shot_dir(input_dir)
             .expect("input_dir should be a valid shot directory path");
 
-        let out_f = format!("ompd-{}-{:02}-{:02}.{}", year, month, day, &self.output_type);
+        let out_f = format!(
+            "ompd-{}-{:02}-{:02}.{}",
+            year, month, day, &self.output_type
+        );
         let output_file = self.output_dir.join(out_f);
 
         let args = self.build_ffmpeg_args(input_dir, &output_file, target_width, target_height);

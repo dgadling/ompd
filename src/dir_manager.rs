@@ -253,7 +253,10 @@ impl DirManager {
     }
 
     /// Get metadata from CSV file or generate it if missing
-    pub fn get_or_generate_metadata(in_dir: &Path, extension: &str) -> Result<FrameMetadata, Error> {
+    pub fn get_or_generate_metadata(
+        in_dir: &Path,
+        extension: &str,
+    ) -> Result<FrameMetadata, Error> {
         let csv_path = in_dir.join("frame_metadata.csv");
         let compressed_csv_path = in_dir.join("frame_metadata.csv.zst");
 
