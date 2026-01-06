@@ -172,6 +172,14 @@ impl Capturer {
             .save(&filler_frame_path)
             .expect("Couldn't create filler frame!");
 
+        // Record filler frame in metadata
+        self.append_metadata(
+            dir_manager.current_shot_dir(),
+            self.curr_frame,
+            width,
+            height,
+        );
+
         let missed_frames = (elapsed_secs / self.sleep_interval.as_secs()) as u32;
         debug!("Going to create {missed_frames:?} frames");
         for n in 1..missed_frames {
