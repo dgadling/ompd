@@ -74,7 +74,7 @@ impl DirManager {
 
         for entry in entries.filter_map(|e| e.ok()) {
             // Skip symlinks
-            if entry.file_type().map_or(false, |ft| ft.is_symlink()) {
+            if entry.file_type().is_ok_and(|ft| ft.is_symlink()) {
                 continue;
             }
 
@@ -83,7 +83,7 @@ impl DirManager {
             // Check extension matches target
             let matches = entry_path
                 .extension()
-                .map_or(false, |ext| ext == target_extension);
+                .is_some_and(|ext| ext == target_extension);
 
             if !matches {
                 continue;
@@ -175,11 +175,11 @@ impl DirManager {
         // Find all image files matching the extension
         let mut image_files: Vec<_> = std::fs::read_dir(in_dir)?
             .filter_map(|e| e.ok())
-            .filter(|e| e.path().extension().map_or(false, |ext| ext == extension))
+            .filter(|e| e.path().extension().is_some_and(|ext| ext == extension))
             .filter(|e| !e.file_type().map_or(true, |ft| ft.is_symlink()))
             .collect();
 
-        image_files.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+        image_files.sort_by_key(|a| a.file_name());
 
         if image_files.is_empty() {
             return Err(anyhow::anyhow!(

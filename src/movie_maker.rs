@@ -41,7 +41,7 @@ impl MovieMaker {
             .unwrap_or_else(|_| panic!("Couldn't ask {} for muxers!", ffmpeg));
 
         let stdout_raw = String::from_utf8_lossy(&output.stdout);
-        let needle = format!("E  {extension}");
+        let needle = format!(" {extension}");
 
         if stdout_raw.lines().any(|line| line.contains(&needle)) {
             return Ok(true);

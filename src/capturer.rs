@@ -200,7 +200,7 @@ impl Capturer {
                 e.path()
                     .extension()
                     .and_then(|ext| ext.to_str())
-                    .map_or(false, |ext| ext == self.shot_type)
+                    .is_some_and(|ext| ext == self.shot_type)
             })
             .count() as FrameCounter;
 
@@ -297,14 +297,10 @@ impl Capturer {
     fn read_last_metadata_line(&self, csv_path: &Path) -> Option<(u32, u32)> {
         let mut rdr = CsvReader::from_path(csv_path).ok()?;
 
-        let mut last_record: Option<FrameRecord> = None;
-        for result in rdr.deserialize() {
-            if let Ok(record) = result {
-                last_record = Some(record);
-            }
-        }
-
-        last_record.map(|r| (r.width, r.height))
+        rdr.deserialize::<FrameRecord>()
+            .filter_map(Result::ok) // Only keep successful deserializations
+            .last() // Get the last valid record, returns Option<FrameRecord>
+            .map(|r| (r.width, r.height)) // Map to the desired tuple format
     }
 }
 
