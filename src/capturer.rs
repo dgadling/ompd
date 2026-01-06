@@ -200,7 +200,7 @@ impl Capturer {
                 e.path()
                     .extension()
                     .and_then(|ext| ext.to_str())
-                    .map_or(false, |ext| ext == self.shot_type)
+                    .is_some_and(|ext| ext == self.shot_type)
             })
             .count() as FrameCounter;
 
