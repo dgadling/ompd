@@ -3,47 +3,24 @@ use crate::dir_manager::DirManager;
 use crate::movie_maker::MovieMaker;
 
 use anyhow::Error;
-use chrono::{DateTime, Datelike, Local};
+use chrono::{DateTime, Datelike, Local, NaiveDate};
 use glob::glob;
 use log::{info, warn};
 use std::collections::HashSet;
-use std::fmt;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::result::Result;
 
 pub struct BackFiller {
     config: Config,
-    today: Discovered,
-}
-
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-struct Discovered {
-    year: u16,
-    month: u8,
-    day: u8,
-}
-
-impl Discovered {
-    fn to_shot_dir_in(&self, root_dir: &Path) -> PathBuf {
-        DirManager::shot_dir_for_date(root_dir, self.year, self.month, self.day)
-    }
-}
-
-impl fmt::Display for Discovered {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}-{:02}-{:02}", self.year, self.month, self.day)
-    }
+    today: NaiveDate,
 }
 
 impl BackFiller {
     pub fn new(config: Config, today: DateTime<Local>) -> BackFiller {
         BackFiller {
             config,
-            today: Discovered {
-                year: today.year() as u16,
-                month: today.month() as u8,
-                day: today.day() as u8,
-            },
+            today: NaiveDate::from_ymd_opt(today.year(), today.month(), today.day())
+                .expect("Invalid date from DateTime<Local>"),
         }
     }
 
@@ -57,7 +34,7 @@ impl BackFiller {
         };
 
         // Throw in today's video so that when we find the directory below we don't try to start the video process early
-        vid_coverage.insert(self.today.clone());
+        vid_coverage.insert(self.today);
 
         let shot_coverage = match self.discover_shots() {
             Ok(r) => r,
@@ -72,9 +49,14 @@ impl BackFiller {
         let m = MovieMaker::new(self.config.clone());
 
         let root_shot_dir = PathBuf::from(&self.config.shot_output_dir);
-        for dir in to_process {
-            let shot_dir = dir.to_shot_dir_in(&root_shot_dir);
-            info!("Launching movie maker for {dir}");
+        for date in to_process {
+            let shot_dir = DirManager::shot_dir_for_date(
+                &root_shot_dir,
+                date.year() as u16,
+                date.month() as u8,
+                date.day() as u8,
+            );
+            info!("Launching movie maker for {date}");
 
             // Generate metadata for old directories that may not have it
             let metadata_csv = shot_dir.join("frame_metadata.csv");
@@ -95,7 +77,7 @@ impl BackFiller {
         info!("Done backfilling movies");
     }
 
-    fn discover_vids(&self) -> Result<HashSet<Discovered>, Error> {
+    fn discover_vids(&self) -> Result<HashSet<NaiveDate>, Error> {
         let mut discovered = HashSet::new();
 
         let video_glob = PathBuf::from(&self.config.vid_output_dir).join(format!(
@@ -115,18 +97,20 @@ impl BackFiller {
             let file_name = entry.file_stem().unwrap().to_string_lossy();
             let file_parts: Vec<&str> = file_name.split('-').collect();
 
-            discovered.insert(Discovered {
-                // Remember that the first bit is "ompd"
-                year: file_parts[1].parse::<u16>().unwrap(),
-                month: file_parts[2].parse::<u8>().unwrap(),
-                day: file_parts[3].parse::<u8>().unwrap(),
-            });
+            // Remember that the first bit is "ompd"
+            if let Some(date) = NaiveDate::from_ymd_opt(
+                file_parts[1].parse::<i32>().unwrap(),
+                file_parts[2].parse::<u32>().unwrap(),
+                file_parts[3].parse::<u32>().unwrap(),
+            ) {
+                discovered.insert(date);
+            }
         }
 
         Ok(discovered)
     }
 
-    fn discover_shots(&self) -> Result<HashSet<Discovered>, Error> {
+    fn discover_shots(&self) -> Result<HashSet<NaiveDate>, Error> {
         let mut discovered = HashSet::new();
 
         let shot_glob = PathBuf::from(&self.config.shot_output_dir)
@@ -145,7 +129,9 @@ impl BackFiller {
             }
 
             if let Some((year, month, day)) = DirManager::parse_date_from_shot_dir(&entry) {
-                discovered.insert(Discovered { year, month, day });
+                if let Some(date) = NaiveDate::from_ymd_opt(year as i32, month as u32, day as u32) {
+                    discovered.insert(date);
+                }
             }
         }
 
