@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Pre-push hook: runs the same checks as CI
+# Silent on success, shows failed commands on failure
+
+failures=()
+
+# Format check
+if ! cargo fmt -- --check >/dev/null 2>&1; then
+    failures+=("cargo fmt -- --check")
+fi
+
+# Build
+if ! cargo build >/dev/null 2>&1; then
+    failures+=("cargo build")
+fi
+
+# Clippy
+if ! cargo clippy -- -D warnings >/dev/null 2>&1; then
+    failures+=("cargo clippy -- -D warnings")
+fi
+
+# Report failures
+if [ ${#failures[@]} -gt 0 ]; then
+    echo "Push blocked. ${#failures[@]} check(s) failed."
+    echo ""
+    echo "Run to see details:"
+    for cmd in "${failures[@]}"; do
+        echo "  $cmd"
+    done
+    exit 1
+fi
