@@ -1,0 +1,37 @@
+#!/usr/bin/env pwsh
+# Pre-push hook for Windows: runs the same checks as CI
+# Requires PowerShell Core (pwsh) - install from https://github.com/PowerShell/PowerShell
+# Silent on success, shows failed commands on failure
+#
+# To use: git config core.hooksPath .githooks/windows
+
+$failures = @()
+
+# Format check
+$null = cargo fmt -- --check 2>&1
+if ($LASTEXITCODE -ne 0) {
+    $failures += "cargo fmt -- --check"
+}
+
+# Build
+$null = cargo build 2>&1
+if ($LASTEXITCODE -ne 0) {
+    $failures += "cargo build"
+}
+
+# Clippy
+$null = cargo clippy -- -D warnings 2>&1
+if ($LASTEXITCODE -ne 0) {
+    $failures += "cargo clippy -- -D warnings"
+}
+
+# Report failures
+if ($failures.Count -gt 0) {
+    Write-Host "Push blocked. $($failures.Count) check(s) failed."
+    Write-Host ""
+    Write-Host "Run to see details:"
+    foreach ($cmd in $failures) {
+        Write-Host "  $cmd"
+    }
+    exit 1
+}
