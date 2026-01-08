@@ -9,27 +9,16 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// Frame rate for generated videos: ~27 fps yields a ~1 minute video from 9 hours of 20-second captures
+const FRAME_RATE: u32 = ((9 * 60 * 60) / 20) / 60;
+
 pub struct MovieMaker {
-    output_dir: PathBuf,
-    frame_rate: u32,
-    file_extension: String,
-    ffmpeg: String,
-    compress_when_done: bool,
-    output_type: String,
-    vid_scale_factor: f32,
+    config: Config,
 }
 
 impl MovieMaker {
     pub fn new(config: Config) -> MovieMaker {
-        MovieMaker {
-            output_dir: PathBuf::from(config.vid_output_dir),
-            frame_rate: ((9 * 60 * 60) / 20) / 60,
-            file_extension: config.shot_type,
-            ffmpeg: config.ffmpeg,
-            compress_when_done: config.compress_shots,
-            output_type: config.video_type,
-            vid_scale_factor: config.vid_scale_factor,
-        }
+        MovieMaker { config }
     }
 
     pub fn has_muxer(ffmpeg: &str, extension: &str) -> Result<bool, Error> {
@@ -56,7 +45,8 @@ impl MovieMaker {
         self.fix_missing_frames(input_dir);
 
         // Analyze frames and determine target dimensions
-        let metadata = match DirManager::get_or_generate_metadata(input_dir, &self.file_extension) {
+        let metadata = match DirManager::get_or_generate_metadata(input_dir, &self.config.shot_type)
+        {
             Ok(m) => m,
             Err(e) => {
                 warn!("Failed to get metadata, using default dimensions: {}", e);
@@ -70,12 +60,12 @@ impl MovieMaker {
 
         let out_f = format!(
             "ompd-{}-{:02}-{:02}.{}",
-            year, month, day, &self.output_type
+            year, month, day, &self.config.video_type
         );
-        let output_file = self.output_dir.join(out_f);
+        let output_file = PathBuf::from(&self.config.vid_output_dir).join(out_f);
 
         let args = self.build_ffmpeg_args(input_dir, &output_file, target_width, target_height);
-        let mut to_run = Command::new(&self.ffmpeg);
+        let mut to_run = Command::new(&self.config.ffmpeg);
         to_run.args(&args);
 
         debug!("{:?}", to_run);
@@ -102,15 +92,15 @@ impl MovieMaker {
             panic!("{}", &err);
         }
 
-        if self.compress_when_done {
+        if self.config.compress_shots {
             info!("Compressing stills");
-            DirManager::compress(input_dir, self.file_extension.as_str());
+            DirManager::compress(input_dir, self.config.shot_type.as_str());
         }
         info!("All done with {input_dir:?}!");
     }
 
     fn fix_missing_frames(&self, in_dir: &Path) {
-        let expected_extension = self.file_extension.as_str();
+        let expected_extension = self.config.shot_type.as_str();
 
         debug!("Going to decompress, first");
         DirManager::decompress(in_dir);
@@ -202,8 +192,8 @@ impl MovieMaker {
             .unwrap_or(DEFAULT_FRAME_DIMENSIONS); // Default if no frames
 
         // Apply scale factor
-        let scaled_width = (most_common_width as f32 * self.vid_scale_factor) as u32;
-        let scaled_height = (most_common_height as f32 * self.vid_scale_factor) as u32;
+        let scaled_width = (most_common_width as f32 * self.config.vid_scale_factor) as u32;
+        let scaled_height = (most_common_height as f32 * self.config.vid_scale_factor) as u32;
 
         // Round to nearest even number (required for video encoding)
         let final_width = (scaled_width + 1) & !1;
@@ -211,7 +201,7 @@ impl MovieMaker {
 
         info!(
             "Target video dimensions: {}x{} (scale factor: {})",
-            final_width, final_height, self.vid_scale_factor
+            final_width, final_height, self.config.vid_scale_factor
         );
 
         (final_width, final_height)
@@ -234,10 +224,10 @@ impl MovieMaker {
 
         vec![
             "-r".to_string(),
-            self.frame_rate.to_string(),
+            FRAME_RATE.to_string(),
             "-i".to_string(),
             input_dir
-                .join(format!("%05d.{}", self.file_extension))
+                .join(format!("%05d.{}", self.config.shot_type))
                 .to_string_lossy()
                 .to_string(),
             "-vf".to_string(),
