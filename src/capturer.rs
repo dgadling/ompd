@@ -340,7 +340,7 @@ mod tests {
 
         // Create a Capturer and call append_metadata directly
         // (since store() requires a screenshots::Image which is hard to mock)
-        let capturer = Capturer::new(&std::time::Duration::from_secs(20), "jpeg");
+        let capturer = Capturer::new(&std::time::Duration::from_secs(20), "webp");
 
         // Append first frame metadata
         capturer.append_metadata(temp_dir.path(), 0, 1920, 1080);
@@ -386,7 +386,7 @@ mod tests {
         let mut dir_manager = DirManager::new(&shot_dir, &vid_dir);
         dir_manager.make_shot_output_dir().unwrap();
 
-        let capturer = Capturer::new(&std::time::Duration::from_secs(20), "jpeg");
+        let capturer = Capturer::new(&std::time::Duration::from_secs(20), "webp");
         let (width, height) = capturer.get_current_dimensions(&dir_manager);
 
         // Without any frames or metadata, should return DEFAULT_FRAME_DIMENSIONS

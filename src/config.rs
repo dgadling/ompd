@@ -50,7 +50,7 @@ impl Config {
                 .into_owned(),
             ffmpeg: "ffmpeg".to_string(),
             handle_old_dirs_on_startup: false,
-            shot_type: "jpeg".to_string(),
+            shot_type: "webp".to_string(),
             video_type: "mp4".to_string(),
             vid_scale_factor: 1.0,
         }
@@ -138,7 +138,7 @@ impl Config {
                 .into_owned(),
             ffmpeg: ffmpeg_path,
             handle_old_dirs_on_startup: true,
-            shot_type: "jpeg".to_string(),
+            shot_type: "webp".to_string(),
             video_type: "mp4".to_string(),
             vid_scale_factor: 1.0,
         };
