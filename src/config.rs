@@ -17,7 +17,6 @@ pub struct Config {
     pub ffmpeg: String,
     pub handle_old_dirs_on_startup: bool,
     pub shot_type: String,
-    pub compress_shots: bool,
     pub video_type: String,
     /// Scale factor for video output dimensions (must be positive)
     pub vid_scale_factor: f32,
@@ -52,7 +51,6 @@ impl Config {
             ffmpeg: "ffmpeg".to_string(),
             handle_old_dirs_on_startup: false,
             shot_type: "jpeg".to_string(),
-            compress_shots: false,
             video_type: "mp4".to_string(),
             vid_scale_factor: 1.0,
         }
@@ -141,7 +139,6 @@ impl Config {
             ffmpeg: ffmpeg_path,
             handle_old_dirs_on_startup: true,
             shot_type: "jpeg".to_string(),
-            compress_shots: true,
             video_type: "mp4".to_string(),
             vid_scale_factor: 1.0,
         };
