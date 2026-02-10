@@ -8,7 +8,7 @@ use anyhow::Error;
 use chrono::{DateTime, Datelike, Local};
 use csv::{Reader as CsvReader, Writer as CsvWriter};
 use image::io::Reader as ImageReader;
-use image::{ImageBuffer, Rgba};
+use image::{DynamicImage, ImageBuffer, Rgba};
 use log::{debug, error, info};
 use rusttype::{Font, Scale};
 use screenshots::Screen;
@@ -28,6 +28,10 @@ use windows::get_screenshot;
 use not_windows::get_screenshot;
 
 pub type FrameCounter = u32;
+
+/// WebP lossy encoding quality (0-100). 75 produces files ~50% smaller than JPEG
+/// at virtually identical visual quality for screenshot content.
+const WEBP_QUALITY: f32 = 75.0;
 
 pub struct Capturer {
     sleep_interval: std::time::Duration,
@@ -115,12 +119,25 @@ impl Capturer {
         let height = new_img.height();
 
         debug!("Writing out a file to {filepath:?}");
-        new_img.save(&filepath).expect("Couldn't save screenshot!");
+        self.save_image(&new_img, &filepath);
 
         // Append frame metadata to CSV
         self.append_metadata(dir, self.curr_frame, width, height);
 
         self.curr_frame += 1;
+    }
+
+    /// Save an image to disk, using WebP encoding when shot_type is "webp",
+    /// otherwise falling back to the format implied by the file extension.
+    fn save_image(&self, img: &DynamicImage, path: &Path) {
+        if self.shot_type == "webp" {
+            let rgba = img.to_rgba8();
+            let encoder = webp::Encoder::from_rgba(rgba.as_raw(), img.width(), img.height());
+            let data = encoder.encode(WEBP_QUALITY);
+            std::fs::write(path, &*data).expect("Couldn't save WebP!");
+        } else {
+            img.save(path).expect("Couldn't save screenshot!");
+        }
     }
 
     /// Append frame metadata to CSV file
@@ -168,9 +185,9 @@ impl Capturer {
         debug!("Creating filler frame with dimensions {}x{}", width, height);
 
         info!("Creating filler frame @ {filler_frame_path:?}");
-        Self::create_filler_frame(elapsed_secs, width, height)
-            .save(&filler_frame_path)
-            .expect("Couldn't create filler frame!");
+        let filler_img =
+            DynamicImage::ImageRgba8(Self::create_filler_frame(elapsed_secs, width, height));
+        self.save_image(&filler_img, &filler_frame_path);
 
         // Record filler frame in metadata
         self.append_metadata(
