@@ -319,7 +319,7 @@ mod tests {
     fn test_generate_metadata_fails_on_empty_dir() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        let result = DirManager::generate_metadata(temp_dir.path(), "jpeg");
+        let result = DirManager::generate_metadata(temp_dir.path(), "webp");
 
         assert!(result.is_err(), "Should error when no frames found");
         let err = result.unwrap_err().to_string();

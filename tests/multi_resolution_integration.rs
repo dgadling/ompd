@@ -15,16 +15,13 @@ fn get_fixture_files() -> Vec<PathBuf> {
         .expect("tests/fixtures directory should exist")
         .filter_map(|e| e.ok())
         .map(|e| e.path())
-        .filter(|p| {
-            p.extension()
-                .map_or(false, |ext| ext == "jpeg" || ext == "jpg")
-        })
+        .filter(|p| p.extension().map_or(false, |ext| ext == "webp"))
         .collect()
 }
 
 fn copy_fixtures_to(dest: &Path, fixtures: &[PathBuf]) {
     for (i, fixture) in fixtures.iter().enumerate() {
-        fs::copy(fixture, dest.join(format!("{:05}.jpeg", i))).expect("copy fixture");
+        fs::copy(fixture, dest.join(format!("{:05}.webp", i))).expect("copy fixture");
     }
 }
 
@@ -36,7 +33,7 @@ fn test_config(shot_dir: &str, vid_dir: &str) -> ompd::Config {
         vid_output_dir: vid_dir.to_string(),
         ffmpeg: "ffmpeg".to_string(),
         handle_old_dirs_on_startup: false,
-        shot_type: "jpeg".to_string(),
+        shot_type: "webp".to_string(),
         video_type: "mp4".to_string(),
         vid_scale_factor: 1.0,
     }
@@ -51,7 +48,7 @@ fn test_metadata_csv_generation() {
     assert!(fixtures.len() >= 2, "Need at least 2 fixture images");
     copy_fixtures_to(shot_dir, &fixtures);
 
-    ompd::dir_manager::DirManager::generate_metadata(shot_dir, "jpeg").unwrap();
+    ompd::dir_manager::DirManager::generate_metadata(shot_dir, "webp").unwrap();
 
     let csv_path = shot_dir.join("frame_metadata.csv");
     assert!(csv_path.exists(), "Metadata CSV should be created");
@@ -118,7 +115,7 @@ fn test_backfiller_generates_metadata() {
     assert!(!csv_path.exists(), "CSV should not exist initially");
 
     // Verify generate_metadata works for legacy directories
-    ompd::dir_manager::DirManager::generate_metadata(&old_shot_dir, "jpeg").unwrap();
+    ompd::dir_manager::DirManager::generate_metadata(&old_shot_dir, "webp").unwrap();
 
     assert!(csv_path.exists(), "Metadata CSV should be generated");
 }
