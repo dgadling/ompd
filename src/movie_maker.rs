@@ -92,18 +92,11 @@ impl MovieMaker {
             panic!("{}", &err);
         }
 
-        if self.config.compress_shots {
-            info!("Compressing stills");
-            DirManager::compress(input_dir, self.config.shot_type.as_str());
-        }
         info!("All done with {input_dir:?}!");
     }
 
     fn fix_missing_frames(&self, in_dir: &Path) {
         let expected_extension = self.config.shot_type.as_str();
-
-        debug!("Going to decompress, first");
-        DirManager::decompress(in_dir);
 
         let mut found_frames = Vec::new();
 

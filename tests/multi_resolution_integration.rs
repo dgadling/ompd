@@ -37,14 +37,13 @@ fn test_config(shot_dir: &str, vid_dir: &str) -> ompd::Config {
         ffmpeg: "ffmpeg".to_string(),
         handle_old_dirs_on_startup: false,
         shot_type: "jpeg".to_string(),
-        compress_shots: false,
         video_type: "mp4".to_string(),
         vid_scale_factor: 1.0,
     }
 }
 
 #[test]
-fn test_metadata_csv_roundtrip() {
+fn test_metadata_csv_generation() {
     let temp_dir = tempfile::tempdir().unwrap();
     let shot_dir = temp_dir.path();
 
@@ -59,16 +58,6 @@ fn test_metadata_csv_roundtrip() {
 
     let original_content = fs::read_to_string(&csv_path).unwrap();
     assert!(original_content.contains("frame,width,height"));
-
-    ompd::dir_manager::DirManager::compress(shot_dir, "jpeg");
-    assert!(shot_dir.join("frame_metadata.csv.zst").exists());
-    assert!(!csv_path.exists());
-
-    ompd::dir_manager::DirManager::decompress(shot_dir);
-    assert!(csv_path.exists());
-
-    let restored = fs::read_to_string(&csv_path).unwrap();
-    assert_eq!(original_content, restored, "Content should be preserved");
 }
 
 #[test]
@@ -132,47 +121,6 @@ fn test_backfiller_generates_metadata() {
     ompd::dir_manager::DirManager::generate_metadata(&old_shot_dir, "jpeg").unwrap();
 
     assert!(csv_path.exists(), "Metadata CSV should be generated");
-}
-
-#[test]
-fn test_generate_metadata_works_after_decompression() {
-    let temp_dir = tempfile::tempdir().unwrap();
-    let shot_dir = temp_dir.path();
-
-    let fixtures = get_fixture_files();
-    assert!(!fixtures.is_empty(), "Need at least 1 fixture image");
-    copy_fixtures_to(shot_dir, &fixtures[..fixtures.len().min(2)]);
-
-    // Compress the directory (simulating archived data)
-    ompd::dir_manager::DirManager::compress(shot_dir, "jpeg");
-
-    // Verify images are now compressed
-    let compressed_exists = fs::read_dir(shot_dir)
-        .unwrap()
-        .filter_map(|e| e.ok())
-        .any(|e| e.path().extension().map_or(false, |ext| ext == "zst"));
-    assert!(compressed_exists, "Should have compressed files");
-
-    // Without decompression, generate_metadata should fail
-    let result_before = ompd::dir_manager::DirManager::generate_metadata(shot_dir, "jpeg");
-    assert!(
-        result_before.is_err(),
-        "Should fail on compressed directory"
-    );
-
-    // Decompress first
-    ompd::dir_manager::DirManager::decompress(shot_dir);
-
-    // Now generate_metadata should succeed
-    let result_after = ompd::dir_manager::DirManager::generate_metadata(shot_dir, "jpeg");
-    assert!(
-        result_after.is_ok(),
-        "Should succeed after decompression. Error: {:?}",
-        result_after.err()
-    );
-
-    let csv_path = shot_dir.join("frame_metadata.csv");
-    assert!(csv_path.exists(), "Metadata CSV should be created");
 }
 
 /// Test that mixed resolution input produces a valid video using the most common resolution

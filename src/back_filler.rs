@@ -61,7 +61,6 @@ impl BackFiller {
             // Generate metadata for old directories that may not have it
             let metadata_csv = shot_dir.join("frame_metadata.csv");
             if !metadata_csv.exists() {
-                DirManager::decompress(&shot_dir);
                 info!("Generating missing metadata for {}", shot_dir.display());
                 if let Err(e) = DirManager::generate_metadata(&shot_dir, &self.config.shot_type) {
                     warn!(

@@ -98,7 +98,7 @@ pub fn run(config: Config) {
                     thread::Builder::new()
                         .name("moviemaker".into())
                         .spawn(move || {
-                            // TODO: Fire up a resizer before doing the movie making, compress when done.
+                            // TODO: Fire up a resizer before doing the movie making.
                             info!("Launching movie maker");
                             // NOTE: Get a fresh copy of the config in case something
                             // has changed since we started.
