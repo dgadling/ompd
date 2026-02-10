@@ -3,6 +3,7 @@ use crate::DirManager;
 use crate::FrameMetadata;
 use crate::DEFAULT_FRAME_DIMENSIONS;
 use anyhow::Error;
+use chrono::{Datelike, Local, NaiveDate};
 use log::{debug, error, info, warn};
 use std::collections::HashMap;
 use std::fs;
@@ -90,6 +91,20 @@ impl MovieMaker {
             let err = format!("Issue with ffmpeg - last line of stderr: {}", last_line);
             error!("{}", &err);
             panic!("{}", &err);
+        }
+
+        if let Some(keep_count) = self.config.keep_shots_days {
+            let today = Local::now();
+            let today_date = NaiveDate::from_ymd_opt(today.year(), today.month(), today.day())
+                .expect("Invalid date from Local::now()");
+
+            DirManager::cleanup_old_shot_dirs(
+                Path::new(&self.config.shot_output_dir),
+                Path::new(&self.config.vid_output_dir),
+                &self.config.video_type,
+                keep_count,
+                today_date,
+            );
         }
 
         info!("All done with {input_dir:?}!");
