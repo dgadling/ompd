@@ -178,6 +178,11 @@ impl DirManager {
         keep_count: u32,
         today: NaiveDate,
     ) {
+        info!(
+            "Checking for old shot dirs to clean up (keeping {} days)",
+            keep_count
+        );
+
         let shot_glob = shot_root
             .join("[0-9][0-9][0-9][0-9]")
             .join("[0-1][0-9]")
