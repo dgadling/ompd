@@ -36,6 +36,7 @@ fn test_config(shot_dir: &str, vid_dir: &str) -> ompd::Config {
         shot_type: "webp".to_string(),
         video_type: "mp4".to_string(),
         vid_scale_factor: 1.0,
+        keep_shots_days: None,
     }
 }
 

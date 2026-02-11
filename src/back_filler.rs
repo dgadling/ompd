@@ -7,7 +7,7 @@ use chrono::{DateTime, Datelike, Local, NaiveDate};
 use glob::glob;
 use log::{info, warn};
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::result::Result;
 
 pub struct BackFiller {
@@ -74,6 +74,16 @@ impl BackFiller {
         }
 
         info!("Done backfilling movies");
+
+        if let Some(keep_count) = self.config.keep_shots_days {
+            DirManager::cleanup_old_shot_dirs(
+                Path::new(&self.config.shot_output_dir),
+                Path::new(&self.config.vid_output_dir),
+                &self.config.video_type,
+                keep_count,
+                self.today,
+            );
+        }
     }
 
     fn discover_vids(&self) -> Result<HashSet<NaiveDate>, Error> {

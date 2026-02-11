@@ -20,6 +20,13 @@ pub struct Config {
     pub video_type: String,
     /// Scale factor for video output dimensions (must be positive)
     pub vid_scale_factor: f32,
+    /// Number of recorded days of shot directories to retain. If set, only the
+    /// most recent N shot directories (by date) are kept; older ones are deleted
+    /// once their video has been confirmed to exist. Gaps (weekends, holidays)
+    /// don't count — only directories that actually exist are counted.
+    /// If absent/null, shot directories are kept forever (current behavior).
+    #[serde(default)]
+    pub keep_shots_days: Option<u32>,
 }
 
 impl Config {
@@ -53,6 +60,7 @@ impl Config {
             shot_type: "webp".to_string(),
             video_type: "mp4".to_string(),
             vid_scale_factor: 1.0,
+            keep_shots_days: None,
         }
     }
 
@@ -141,6 +149,7 @@ impl Config {
             shot_type: "webp".to_string(),
             video_type: "mp4".to_string(),
             vid_scale_factor: 1.0,
+            keep_shots_days: None,
         };
 
         if write_config {
@@ -184,5 +193,32 @@ mod tests {
         let mut config = Config::for_testing();
         config.vid_scale_factor = -0.5;
         config.validate();
+    }
+
+    #[test]
+    fn test_keep_shots_days_default_is_none() {
+        let config = Config::for_testing();
+        assert_eq!(config.keep_shots_days, None);
+    }
+
+    #[test]
+    fn test_keep_shots_days_missing_from_json() {
+        let json = r#"{
+            "interval": 20,
+            "max_sleep_secs": 180,
+            "shot_output_dir": "/tmp/shots",
+            "vid_output_dir": "/tmp/vids",
+            "ffmpeg": "/usr/bin/ffmpeg",
+            "handle_old_dirs_on_startup": false,
+            "shot_type": "jpeg",
+            "compress_shots": false,
+            "video_type": "mp4",
+            "vid_scale_factor": 1.0
+        }"#;
+        let config: Config = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            config.keep_shots_days, None,
+            "Missing keep_shots_days should deserialize as None"
+        );
     }
 }
