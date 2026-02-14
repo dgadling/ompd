@@ -10,6 +10,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
 /// Frame rate for generated videos: ~27 fps yields a ~1 minute video from 9 hours of 20-second captures
 const FRAME_RATE: u32 = ((9 * 60 * 60) / 20) / 60;
 
@@ -68,6 +73,21 @@ impl MovieMaker {
         let args = self.build_ffmpeg_args(input_dir, &output_file, target_width, target_height);
         let mut to_run = Command::new(&self.config.ffmpeg);
         to_run.args(&args);
+
+        // Lower CPU priority so ffmpeg doesn't drag down system performance
+        #[cfg(unix)]
+        // SAFETY: nice() is async-signal-safe per POSIX, which is the requirement for pre_exec closures.
+        unsafe {
+            to_run.pre_exec(|| {
+                // nice(10) only fails when lowering priority (negative increment), so ignoring
+                // the return is safe. Returning Err would abort ffmpeg entirely, which is worse
+                // than running at normal priority.
+                let _ = libc::nice(10);
+                Ok(())
+            });
+        }
+        #[cfg(windows)]
+        to_run.creation_flags(0x00004000); // BELOW_NORMAL_PRIORITY_CLASS
 
         debug!("{:?}", to_run);
 

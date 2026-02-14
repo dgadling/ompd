@@ -924,6 +924,7 @@ dependencies = [
  "home",
  "image",
  "imageproc",
+ "libc",
  "log",
  "rusttype",
  "screenshots",

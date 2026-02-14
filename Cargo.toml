@@ -22,6 +22,9 @@ symlink = "0.1.0"
 webp = { version = "0.3", default-features = false }
 which = "4.4.0"
 
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [target.'cfg(windows)'.dependencies]
 wmi = "0.12.1"
 
