@@ -76,13 +76,22 @@ impl MovieMaker {
 
         // Lower CPU priority so ffmpeg doesn't drag down system performance
         #[cfg(unix)]
-        // SAFETY: nice() is async-signal-safe per POSIX, which is the requirement for pre_exec closures.
+        // SAFETY: nice(), setpriority() are async-signal-safe per POSIX, which is the
+        // requirement for pre_exec closures.
         unsafe {
             to_run.pre_exec(|| {
-                // nice(10) only fails when lowering priority (negative increment), so ignoring
-                // the return is safe. Returning Err would abort ffmpeg entirely, which is worse
-                // than running at normal priority.
-                let _ = libc::nice(10);
+                // On macOS, nice() is largely ignored — the scheduler uses QoS classes instead.
+                // setpriority(PRIO_DARWIN_PROCESS, ..., PRIO_DARWIN_BG) puts the process into
+                // Background QoS, which is what macOS uses for Time Machine, Spotlight, etc.
+                // On Apple Silicon this also constrains the process to efficiency cores.
+                #[cfg(target_os = "macos")]
+                {
+                    let _ = libc::setpriority(libc::PRIO_DARWIN_PROCESS, 0, libc::PRIO_DARWIN_BG);
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let _ = libc::nice(10);
+                }
                 Ok(())
             });
         }
