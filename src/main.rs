@@ -1,3 +1,6 @@
+use std::io::Write;
+
+use chrono::Local;
 use env_logger::Builder;
 use log::{info, LevelFilter};
 
@@ -27,6 +30,16 @@ fn main() {
     };
 
     Builder::new()
+        .format(|buf, record| {
+            writeln!(
+                buf,
+                "[{} {:5} {}] {}",
+                Local::now().format("%Y-%m-%dT%H:%M:%S"),
+                record.level(),
+                record.target(),
+                record.args()
+            )
+        })
         .filter_level(level_filter)
         .filter_module("wmi", LevelFilter::Error)
         .init();
