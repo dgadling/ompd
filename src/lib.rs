@@ -31,9 +31,10 @@ pub use config::Config;
 use dir_manager::DirManager;
 use log::{error, info, warn};
 use movie_maker::MovieMaker;
+use std::path::PathBuf;
 use std::thread;
 
-pub fn run(config: Config) {
+pub fn run(config: Config, config_path: Option<PathBuf>) {
     let sleep_interval = std::time::Duration::from_secs(config.interval);
     let mut d = DirManager::new(&config.shot_output_dir, &config.vid_output_dir);
     let mut c = Capturer::new(&sleep_interval, &config.shot_type);
@@ -94,6 +95,7 @@ pub fn run(config: Config) {
                 info!("Brand new day! Let's goooooo");
 
                 let shot_dir = d.current_shot_dir().to_path_buf();
+                let config_path_clone = config_path.clone();
                 let moviemaker_maybe =
                     thread::Builder::new()
                         .name("moviemaker".into())
@@ -102,7 +104,8 @@ pub fn run(config: Config) {
                             info!("Launching movie maker");
                             // NOTE: Get a fresh copy of the config in case something
                             // has changed since we started.
-                            let m = MovieMaker::new(Config::get_config());
+                            let m =
+                                MovieMaker::new(Config::get_config(config_path_clone.as_deref()));
                             m.make_movie_from(shot_dir.as_path());
                         });
 
