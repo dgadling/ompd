@@ -2,8 +2,9 @@ name: "[ompd] Release"
 
 on:
   workflow_dispatch:
-  release:
-    types: [created]
+  push:
+    tags:
+      - 'v*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -53,4 +54,5 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
+          draft: true
           files: binaries/*
