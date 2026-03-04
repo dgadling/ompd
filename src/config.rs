@@ -1,4 +1,3 @@
-use core::panic;
 use home::home_dir;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
@@ -97,7 +96,7 @@ impl Config {
                     );
                 }
 
-                if !std::path::Path::new(&config.ffmpeg).is_file() {
+                if !Path::new(&config.ffmpeg).is_file() {
                     let e = format!("Our 'ffmpeg' ({}) isn't a file!", &config.ffmpeg);
                     error!("{}", e);
                     panic!("{}", e);
