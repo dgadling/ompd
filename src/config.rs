@@ -4,6 +4,7 @@ use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::File;
+use std::path::Path;
 use which::which;
 
 use crate::movie_maker::MovieMaker;
@@ -64,10 +65,13 @@ impl Config {
         }
     }
 
-    pub fn get_config() -> Config {
+    pub fn get_config(config_path_override: Option<&Path>) -> Config {
         let home = home_dir().expect("Couldn't figure out our home directory?!");
 
-        let config_path = home.join(".ompd-config.json");
+        let config_path = match config_path_override {
+            Some(p) => p.to_path_buf(),
+            None => home.join(".ompd-config.json"),
+        };
         let mut write_config = true;
 
         if config_path.exists() {

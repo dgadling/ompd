@@ -39,6 +39,8 @@ jobs:
       - name: Build (release)
         if: ${{ inputs.upload_artifacts }}
         run: cargo build --verbose --release
+        env:
+          OMPD_BUILD_VERSION: ${{ inputs.version }}
 
       - name: Archive binary
         if: ${{ inputs.upload_artifacts }}

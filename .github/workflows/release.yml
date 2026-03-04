@@ -3,7 +3,7 @@ name: "[ompd] Release"
 on:
   workflow_dispatch:
   release:
-    types: [published]
+    types: [created]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
