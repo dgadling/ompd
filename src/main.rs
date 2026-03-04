@@ -1,3 +1,4 @@
+// `Write` trait is needed for the `writeln!` macro in the logger format closure.
 use std::io::Write;
 use std::path::PathBuf;
 
