@@ -214,7 +214,7 @@ impl DirManager {
         }
 
         // Sort descending (most recent first)
-        dated_dirs.sort_by(|a, b| b.0.cmp(&a.0));
+        dated_dirs.sort_by_key(|b| std::cmp::Reverse(b.0));
 
         // Skip the first keep_count entries
         let to_delete = dated_dirs.into_iter().skip(keep_count as usize);
