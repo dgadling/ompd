@@ -4,13 +4,12 @@ mod windows;
 #[cfg(not(target_os = "windows"))]
 mod not_windows;
 
+use ab_glyph::{FontRef, PxScale};
 use anyhow::Error;
 use chrono::{DateTime, Datelike, Local};
 use csv::{Reader as CsvReader, Writer as CsvWriter};
-use image::io::Reader as ImageReader;
-use image::{DynamicImage, ImageBuffer, Rgba};
+use image::{DynamicImage, ImageBuffer, ImageReader, Rgba};
 use log::{debug, error, info};
-use rusttype::{Font, Scale};
 use screenshots::Screen;
 use std::fs::OpenOptions;
 use std::io::Cursor;
@@ -260,13 +259,13 @@ impl Capturer {
         };
 
         let font_data = include_bytes!("Ubuntu-Regular.ttf");
-        let font = Font::try_from_bytes(font_data as &[u8]).unwrap();
+        let font = FontRef::try_from_slice(font_data as &[u8]).unwrap();
 
         // Start with font size as ~20% of height
         let initial_font_size = height as f32 / 5.0;
 
         // Measure text width at initial size
-        let initial_scale = Scale::uniform(initial_font_size);
+        let initial_scale = PxScale::from(initial_font_size);
         let (text_w, _) = imageproc::drawing::text_size(initial_scale, &font, &duration_str);
 
         // If text is wider than 80% of frame, scale down proportionally
@@ -277,7 +276,7 @@ impl Capturer {
             initial_font_size
         };
 
-        let scale = Scale::uniform(font_size);
+        let scale = PxScale::from(font_size);
         let (text_w, text_h) = imageproc::drawing::text_size(scale, &font, &duration_str);
         let offset_x = (width as f32 / 2.0) - (text_w as f32 / 2.0);
         let offset_y = (height as f32 / 2.0) - (text_h as f32 / 2.0);

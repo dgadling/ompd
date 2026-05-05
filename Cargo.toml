@@ -4,6 +4,7 @@ version = "2.0.1"
 edition = "2021"
 
 [dependencies]
+ab_glyph = "0.2.23"
 anyhow = "1.0.70"
 chrono = "0.4.24"
 clap = { version = "4", features = ["derive"] }
@@ -12,10 +13,9 @@ ctrlc = "3.2.5"
 env_logger = "0.10.0"
 glob = "0.3.1"
 home = "0.5.4"
-image = "0.24.6"
-imageproc = "0.23.0"
+image = "0.25"
+imageproc = "0.24.0"
 log = "0.4.17"
-rusttype = "0.9.3"
 screenshots = "0.5.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
